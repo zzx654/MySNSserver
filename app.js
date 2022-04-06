@@ -5736,7 +5736,12 @@ function send_message(phone) {
         })
     return '';
   }
-
+app.get('/hello',function(req,res){
+    res.json({
+        resultCode:200
+    })
+})
+var port = process.env.PORT || 3000;//1
 server.listen(80, () => {
     console.log(`Server listening at http://localhost:80`)
   })
