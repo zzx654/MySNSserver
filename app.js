@@ -107,7 +107,7 @@ app.post('/uploadmultiple',fileUpload.array('image'),(req,res)=>{
     for(var i=0;i<res.req.files.length;i++)
     {
         imgJson={}
-        imgJson.imageUri='http://192.168.219.102:80/' +req.files[i].filename
+        imgJson.imageUri='https://socialanony.herokuapp.com' +req.files[i].filename
         console.log(imgJson.imageUri)
         imgJsonArray.push(imgJson)
         console.log(imgJsonArray[i].imageUri)
@@ -133,7 +133,7 @@ app.post('/upload', fileUpload.single('image'), (req, res) => {
 })
 app.post('/uploadprofileimg', fileUpload.single('image'), (req, res) => {
     console.log(req.file)
-    var image='http://192.168.219.102:80/' +req.file.filename
+    var image='https://socialanony.herokuapp.com' +req.file.filename
     res.json({
         resultCode:200,
         imageUri:image
@@ -142,7 +142,7 @@ app.post('/uploadprofileimg', fileUpload.single('image'), (req, res) => {
   })
   app.post('/uploadimg', fileUpload.single('image'), (req, res) => {
     console.log(req.file)
-    var image='http://192.168.219.102:80/' +req.file.filename
+    var image='https://socialanony.herokuapp.com' +req.file.filename
     res.json({
         resultCode:200,
         imageUri:image
@@ -308,7 +308,7 @@ io.sockets.on('connection', (socket) => {
   socket.on('newImage', (data) => {
     const messageData = JSON.parse(data)
     // 안드로이드 에뮬레이터 기준으로 url은 10.0.2.2, 스마트폰에서 실험해보고 싶으면 자신의 ip 주소로 해야 한다.
-    messageData.content = 'http://192.168.219.100:80/' + messageData.content
+    messageData.content = 'https://socialanony.herokuapp.com/' + messageData.content
     console.log(`[Room Number ${messageData.roomid}] ${messageData.sendername} : ${messageData.content}`)
     socket.broadcast.to(`${messageData.roomid}`).emit('update', JSON.stringify(messageData))
   })
@@ -320,10 +320,10 @@ io.sockets.on('connection', (socket) => {
 
 
 var connection = mysql.createConnection({
-    host: 'localhost',
-    user: "root",
-    database: "portfolio",
-    password: "audgks167",
+    host: 'us-cdbr-east-05.cleardb.net',
+    user: "b6329179833105",
+    database: "heroku_3ffce85cd7fd33c",
+    password: "41ebc80c",
     port: "3306",
     charset:"utf8mb4",
     dateStrings:'date'
@@ -5741,9 +5741,9 @@ function send_message(phone) {
         })
     return '';
   }
-app.get('/hello',function(req,res){
+app.get('/helloww',function(req,res){
     res.json({
-        resultCode:200
+        resultCode:300
     })
 })
 var port = process.env.PORT || 3000;//1
