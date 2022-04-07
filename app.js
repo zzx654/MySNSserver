@@ -25,6 +25,7 @@ const { verify } = require('crypto');
 
 const randomstring = require('randomstring');
 const { isBuffer } = require('util');
+require('dotenv').config()
 const fileUpload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
@@ -71,10 +72,14 @@ const fileUpload = multer({
 
 const admin=require("firebase-admin")
 
-let serviceAccount=require("C:/Users/LMH/Desktop/portfolio/app-portfolio-9cc0c-firebase-adminsdk-pruyz-5d651ebb3f.json");
+
 const { rejects } = require('assert');
 
-admin.initializeApp({ credential: admin.credential.cert(serviceAccount), });
+admin.initializeApp({ credential: admin.credential.cert({
+    "projectId":process.env.FIREBASE_PROJECT_ID,
+    "privateKey":process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    "clientEmail":process.env.FIREBASE_CLIENT_EMAIL,
+}), });
 
 app.get('/stream',(req,res)=>{
     console.log(req.query.name)
@@ -5742,6 +5747,6 @@ app.get('/hello',function(req,res){
     })
 })
 var port = process.env.PORT || 3000;//1
-server.listen(80, () => {
+server.listen(port, () => {
     console.log(`Server listening at http://localhost:80`)
   })
