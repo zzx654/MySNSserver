@@ -109,7 +109,7 @@ app.post('/uploadaudio',upload.single('media'),(req,res)=>{
   
   const Data = {
     resultCode: 1,
-    uri : 'https://'+s3bucket+'.s4.amazonaws.com/'+req.file.location
+    uri : req.file.location
   }
   res.send(JSON.stringify(Data))
 })
@@ -123,7 +123,7 @@ app.post('/uploadmultiple',upload.array('image'),(req,res)=>{
     for(var i=0;i<res.req.files.length;i++)
     {
         imgJson={}
-        imgJson.imageUri='https://'+s3bucket+'.s4.amazonaws.com/'+req.files[i].location
+        imgJson.imageUri=req.files[i].location
         console.log(imgJson.imageUri)
         imgJsonArray.push(imgJson)
         console.log(imgJsonArray[i].imageUri)
@@ -5757,7 +5757,7 @@ function send_message(phone) {
         })
     return '';
   }
-app.get('/hellow',function(req,res){
+app.get('/hello',function(req,res){
     res.json({
         resultCode:300
     })
