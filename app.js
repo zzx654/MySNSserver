@@ -103,7 +103,7 @@ app.get('/stream',(req,res)=>{
     const rstream=fs.createReadStream(file)
     rstream.pipe(res)
 })
-app.post('/uploadaudio',fileUpload.single('media'),(req,res)=>{
+app.post('/uploadaudio',upload.single('media'),(req,res)=>{
     console.log(req.file)
   
   
