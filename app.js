@@ -147,9 +147,9 @@ app.post('/upload', fileUpload.single('image'), (req, res) => {
   }
   res.send(JSON.stringify(imageData))
 })
-app.post('/uploadprofileimg', fileUpload.single('image'), (req, res) => {
+app.post('/uploadprofileimg', upload.single('image'), (req, res) => {
     console.log(req.file)
-    var image='https://socialanony.herokuapp.com/' +req.file.filename
+    var image=req.file.location
     res.json({
         resultCode:200,
         imageUri:image
