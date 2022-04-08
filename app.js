@@ -20,9 +20,15 @@ const e = require('express');
 
 const sharp = require("sharp");
 const multer = require('multer')
+const multerS3=require('multer-s3')
+const AWS=require("aws-sdk")
  const path = require('path');
 const { verify } = require('crypto');
-
+const s3bucket = new AWS.S3({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    region: process.env.AWS_REGION
+  });
 const randomstring = require('randomstring');
 const { isBuffer } = require('util');
 require('dotenv').config()
@@ -69,7 +75,17 @@ const fileUpload = multer({
   },
 })
 
-
+const upload = multer({
+    storage: multerS3({
+      s3: s3bucket,
+      bucket: process.env.S3_BUCKET_NAME,
+      key: function(req, file, cb){
+        const fileName = file.originalname.toLowerCase().split(" ").join("-");
+        cb(null, Date.now() + "-" + fileName);
+      },
+      acl: "public-read"
+    })
+  });
 const admin=require("firebase-admin")
 
 
@@ -93,21 +109,21 @@ app.post('/uploadaudio',fileUpload.single('media'),(req,res)=>{
   
   const Data = {
     resultCode: 1,
-    uri : res.req.file.filename
+    uri : 'https://'+s3bucket+'.s4.amazonaws.com/'+req.file.location
   }
   res.send(JSON.stringify(Data))
 })
 
 
 
-app.post('/uploadmultiple',fileUpload.array('image'),(req,res)=>{
+app.post('/uploadmultiple',upload.array('image'),(req,res)=>{
     //console.log(req.files)
     var imgJsonArray=new Array()
     var imgJson=new Object()
     for(var i=0;i<res.req.files.length;i++)
     {
         imgJson={}
-        imgJson.imageUri='https://socialanony.herokuapp.com' +req.files[i].filename
+        imgJson.imageUri='https://'+s3bucket+'.s4.amazonaws.com/'+req.files[i].location
         console.log(imgJson.imageUri)
         imgJsonArray.push(imgJson)
         console.log(imgJsonArray[i].imageUri)
@@ -133,7 +149,7 @@ app.post('/upload', fileUpload.single('image'), (req, res) => {
 })
 app.post('/uploadprofileimg', fileUpload.single('image'), (req, res) => {
     console.log(req.file)
-    var image='https://socialanony.herokuapp.com' +req.file.filename
+    var image='https://socialanony.herokuapp.com/' +req.file.filename
     res.json({
         resultCode:200,
         imageUri:image
@@ -142,7 +158,7 @@ app.post('/uploadprofileimg', fileUpload.single('image'), (req, res) => {
   })
   app.post('/uploadimg', fileUpload.single('image'), (req, res) => {
     console.log(req.file)
-    var image='https://socialanony.herokuapp.com' +req.file.filename
+    var image='https://socialanony.herokuapp.com/' +req.file.filename
     res.json({
         resultCode:200,
         imageUri:image
