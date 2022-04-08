@@ -5757,7 +5757,7 @@ function send_message(phone) {
         })
     return '';
   }
-app.get('/helloww',function(req,res){
+app.get('/hellow',function(req,res){
     res.json({
         resultCode:300
     })
