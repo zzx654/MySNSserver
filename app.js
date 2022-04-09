@@ -147,13 +147,40 @@ app.post('/upload', fileUpload.single('image'), (req, res) => {
   }
   res.send(JSON.stringify(imageData))
 })
-app.post('/uploadprofileimg', upload.single('image'), (req, res) => {
+app.post('/uploadprofileimg', verifyToken,upload.single('image'), (req, res) => {
     console.log(req.file)
-    var image=req.file.location
-    res.json({
-        resultCode:200,
-        imageUri:image
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+        {
+        console.log('인증오류발생')
+        }
+        else
+        {
+            var platform=authData.user.platform
+            var account=authData.user.account
+            var getmy='select *from user where platform=? and account=?'
+            connection.query(getmy,[platform,account],function(err,myresult){
+                if(err)
+                {
+                    console.log(err)
+                }
+                else
+                {
+                    var image=req.file.location
+                    const result={
+                        ImageUrl:image,
+                        resultCode:200
+                    }
+                    io.to(userresult[0].socketid).emit('getuploadedimg',JSON.stringify(result))
+                    res.json({
+                        resultCode:200,
+                        imageUri:image
+                    })
+                }
+            })
+        }
     })
+  
 
   })
   app.post('/uploadimg', fileUpload.single('image'), (req, res) => {
