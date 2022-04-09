@@ -2275,7 +2275,7 @@ var getmy='select *from user where platform=? and account=?'
                     +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
                     +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
                     " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
-                    "left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                    " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                     " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
                     " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id)hot"+
                     " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) having postid in (select postid from posttag where tagname=?) order by commentcount+likecount desc,postnum desc limit 5"
@@ -2855,7 +2855,7 @@ app.post("/getNearPosts",verifyToken,(req,res)=>{
                         " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
                         " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid "+
                         " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
-                        "left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                        " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
                         " where latitude is not null and (date<? or (date=? and postnum<?)) and post.userid not in (select userid from block where blockeduserid=?) and post.userid not in (select blockeduserid from block where userid=?) having distance<=? order by date desc,postnum desc limit 5"
                 
                     }
