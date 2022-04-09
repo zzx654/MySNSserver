@@ -148,6 +148,7 @@ app.post('/upload', fileUpload.single('image'), (req, res) => {
   res.send(JSON.stringify(imageData))
 })
 app.post('/uploadprofileimg', verifyToken,upload.single('image'), (req, res) => {
+    console.log('checkspeed!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     console.log(req.file)
     jwt.verify(req.token,'secretkey',(err,authData)=>{
         if(err)
