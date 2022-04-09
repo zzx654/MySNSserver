@@ -171,7 +171,7 @@ app.post('/uploadprofileimg', verifyToken,upload.single('image'), (req, res) => 
                         ImageUrl:image,
                         resultCode:200
                     }
-                    io.to(userresult[0].socketid).emit('getuploadedimg',JSON.stringify(result))
+                    io.to(myresult[0].socketid).emit('getuploadedimg',JSON.stringify(result))
                     res.json({
                         resultCode:200,
                         imageUri:image
