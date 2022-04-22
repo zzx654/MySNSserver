@@ -1908,14 +1908,14 @@ app.post('/getSearchedPerson',verifyToken,(req,res)=>{
                 {
                     if(lastuserid==undefined)
                     {
-                        sql="select user.userid,nickname,gender,if(isnull(profileimage),?,profileimage) as profileimage,if(isnull(myfollow.account),0,1) as following from"+
-                        " user left outer join (select *from follow where platform=? and account=?) myfollow on user.userid=myfollow.userid"+
+                        sql="select *from(select user.userid,nickname,gender,if(isnull(profileimage),?,profileimage) as profileimage,if(isnull(myfollow.account),0,1) as following from"+
+                        " user left outer join (select *from follow where platform=? and account=?) myfollow on user.userid=myfollow.userid)searcheduser"+
                         " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and nickname like ? order by userid desc limit 20"
                         param=['none',platform,account,myresult[0].userid,myresult[0].userid,nickname]
                     }
                     else{
-                        sql="select user.userid,user.nickname,user.gender,if(isnull(user.profileimage),?,user.profileimage) as profileimage,if(isnull(myfollow.account),0,1) as following from"+
-                        " (select userid,nickname,gender,profileimage from user) user left outer join (select *from follow where platform=? and account=?) myfollow on user.userid=myfollow.userid"+
+                        sql="select *from(select user.userid,nickname,gender,if(isnull(user.profileimage),?,user.profileimage) as profileimage,if(isnull(myfollow.account),0,1) as following from"+
+                        " user left outer join (select *from follow where platform=? and account=?) myfollow on user.userid=myfollow.userid)searcheduser"+
                         " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid<? and nickname like ? order by userid desc limit 20"
                         param=['none',platform,account,myresult[0].userid,myresult[0].userid,myresult[0].userid,nickname]
                     }
