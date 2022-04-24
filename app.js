@@ -1844,11 +1844,11 @@ app.post('/toggleFollow',verifyToken,(req,res)=>{
             var param=[userid,platform,account]
             if(following==0)
             {
-                query="insert into (userid,platform,account) values(?,?,?)"
+                query="insert into follow (userid,platform,account) values(?,?,?)"
             
             }
             else{
-                query="delete from favoritetags where userid=? and platform=? and account=?"
+                query="delete from follow where userid=? and platform=? and account=?"
             }
             connection.query(query,param,function(err,result){
                 if(err)
