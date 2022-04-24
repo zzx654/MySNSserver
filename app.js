@@ -1828,6 +1828,47 @@ app.post('/toggleBookmarkPost',verifyToken,(req,res)=>{
 
 
 })
+app.post('/toggleFollow',verifyToken,(req,res)=>{
+    var userid=req.body.userid
+    var following=req.body.following
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+        {
+            console.log('인증실패')
+        }
+        else
+        {
+            var platform=authData.user.platform
+            var account=authData.user.account
+            var query=""
+            var param=[userid,platform,account]
+            if(following==0)
+            {
+                query="insert into (userid,platform,account) values(?,?,?)"
+            
+            }
+            else{
+                query="delete from favoritetags where userid=? and platform=? and account=?"
+            }
+            connection.query(query,param,function(err,result){
+                if(err)
+                {
+                    res.json({
+                        resultCode:400,
+                        value:400
+                    })
+                }
+                else
+                {
+                    res.json({
+                        resultCode:200,
+                        value:200
+                    })
+                }
+            })
+        }
+    })
+})
 app.post('/toggleLikeTag',verifyToken,(req,res)=>{
     //var platform=req.body.platform
     //var account=req.body.account
@@ -1878,6 +1919,154 @@ app.post('/toggleLikeTag',verifyToken,(req,res)=>{
      })
    
 
+})
+app.post('/getFollowingPerson',verifyToken,(req,res)=>{
+    var lastuserid=req.body.lastuserid
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+        {
+            res.json({
+                resultCode:100,
+                persons:[]
+            })
+        }
+        else
+        {
+            var platform=authData.user.platform
+            var account=authData.user.account
+            var param=[platform,account]
+          
+            var getmyid="select *from user where platform=? and account=?"
+            var sql=""
+            connection.query(getmyid,param,function(err,myresult){
+                if(err)
+                {
+                    console.log(err)
+                }
+                else
+                {
+                    if(lastuserid==undefined)
+                    {
+                        sql="select *from(select user.userid,nickname,gender,if(isnull(profileimage),?,profileimage) as profileimage,if(isnull(myfollow.account),0,1) as following from"+
+                        " user left outer join (select *from follow where platform=? and account=?) myfollow on user.userid=myfollow.userid)searcheduser"+
+                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid in (select userid from follow where platform=? and account=?) order by userid desc limit 20"
+                        param=['none',platform,account,myresult[0].userid,myresult[0].userid,platform,account]
+                    }
+                    else{
+                        sql="select *from(select user.userid,nickname,gender,if(isnull(user.profileimage),?,user.profileimage) as profileimage,if(isnull(myfollow.account),0,1) as following from"+
+                        " user left outer join (select *from follow where platform=? and account=?) myfollow on user.userid=myfollow.userid)searcheduser"+
+                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?)  and userid in (select userid from follow where platform=? and account=?) and userid<?  order by userid desc limit 20"
+                        param=['none',platform,account,myresult[0].userid,myresult[0].userid,platform,account,myresult[0].userid]
+                    }
+                    connection.query(sql,param,function(err,result){
+                        if(err)
+                        {
+                            console.log(err)
+                            res.json({
+                                resultCode:400,
+                                persons:[]
+                            })
+
+                        }
+                        else{
+                            if(result.length==0)
+                            {
+                                res.json({
+                                    resultCode:300,
+                                    persons:[]
+                                })
+                            }
+                            else
+                            {
+                                res.json({
+                                    resultCode:200,
+                                    persons:result
+                                })
+                            }
+                        }
+                    })
+                }
+            })
+
+            
+           
+        }
+    })
+})
+app.post('/getSearchedFollowingPerson',verifyToken,(req,res)=>{
+    var nickname=req.body.nickname
+    var lastuserid=req.body.lastuserid
+    nickname="%"+nickname+"%"
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+        {
+            res.json({
+                resultCode:100,
+                persons:[]
+            })
+        }
+        else
+        {
+            var platform=authData.user.platform
+            var account=authData.user.account
+            var param=[platform,account]
+          
+            var getmyid="select *from user where platform=? and account=?"
+            var sql=""
+            connection.query(getmyid,param,function(err,myresult){
+                if(err)
+                {
+                    console.log(err)
+                }
+                else
+                {
+                    if(lastuserid==undefined)
+                    {
+                        sql="select *from(select user.userid,nickname,gender,if(isnull(profileimage),?,profileimage) as profileimage,if(isnull(myfollow.account),0,1) as following from"+
+                        " user left outer join (select *from follow where platform=? and account=?) myfollow on user.userid=myfollow.userid)searcheduser"+
+                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid in (select userid from follow where platform=? and account=?) and nickname like ? order by userid desc limit 20"
+                        param=['none',platform,account,myresult[0].userid,myresult[0].userid,platform,account,nickname]
+                    }
+                    else{
+                        sql="select *from(select user.userid,nickname,gender,if(isnull(user.profileimage),?,user.profileimage) as profileimage,if(isnull(myfollow.account),0,1) as following from"+
+                        " user left outer join (select *from follow where platform=? and account=?) myfollow on user.userid=myfollow.userid)searcheduser"+
+                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid in (select userid from follow where platform=? and account=?) and userid<? and nickname like ? order by userid desc limit 20"
+                        param=['none',platform,account,myresult[0].userid,myresult[0].userid,platform,account,myresult[0].userid,nickname]
+                    }
+                    connection.query(sql,param,function(err,result){
+                        if(err)
+                        {
+                            console.log(err)
+                            res.json({
+                                resultCode:400,
+                                persons:[]
+                            })
+
+                        }
+                        else{
+                            if(result.length==0)
+                            {
+                                res.json({
+                                    resultCode:300,
+                                    persons:[]
+                                })
+                            }
+                            else
+                            {
+                                res.json({
+                                    resultCode:200,
+                                    persons:result
+                                })
+                            }
+                        }
+                    })
+                }
+            })
+
+            
+           
+        }
+    })
 })
 app.post('/getSearchedPerson',verifyToken,(req,res)=>{
     var nickname=req.body.nickname
@@ -2656,6 +2845,126 @@ app.post('/getBookmarkedPosts',verifyToken,(req,res)=>{
 
    
 
+})
+app.post('/getFollowingPosts',verifyToken,(req,res)=>{
+    //var platform=req.body.platform
+    //var account=req.body.account
+    var postnum=req.body.lastpostnum
+    var postdate=req.body.lastpostdate
+    var latitude=req.body.latitude
+    var longitude=req.body.longitude
+    var param=[]
+    var query=""
+    var getmy='select *from user where platform=? and account=?'
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+        {
+            res.json({
+                resultCode:100,
+                posts:[]
+            })
+        }
+        else
+        {
+            var platform=authData.user.platform
+            var account=authData.user.account
+            connection.query(getmy,[platform,account],function(err,myresult){
+                if(err)
+                {
+                    console.log(err)
+                }
+                else
+                {
+                    if(latitude==undefined)
+                    {
+                        if(postnum==undefined)
+                        {
+                            param=[myresult[0].userid,myresult[0].userid,platform,account]
+                            query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and userid in (select userid from follow where platform=? and account=?) order by date desc,postnum desc limit 20"
+                        }
+                        else
+                        {
+                            param=[postdate,postdate,postnum,myresult[0].userid,myresult[0].userid,platform,account]
+                            query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where (date<? or (date=? and postnum<?)) and userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and userid in (select userid from follow where platform=? and account=?)  order by date desc,postnum desc limit 20"
+                        
+                        }
+                    }
+                    else
+                    {
+                        if(postnum==undefined)
+                        {
+                            param=[latitude,longitude,latitude,myresult[0].userid,myresult[0].userid,platform,account]
+                            query="select post.postnum,post.postid,post.userid,post.vote,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,if(isnull(post.latitude),-100.0,(6371*acos(cos(radians(?))*cos(radians(post.latitude))*cos"+
+                            "(radians(post.longitude)-radians(?))+sin(radians(?))*sin(radians(post.latitude))))) as distance,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and userid in (select userid from follow where platform=? and account=?) order by date desc,postnum desc limit 20"
+                        }
+                        else
+                        {
+                            param=[latitude,longitude,latitude,postdate,postdate,postnum,myresult[0].userid,myresult[0].userid,platform,account]
+                            query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,if(isnull(post.latitude),-100.0,(6371*acos(cos(radians(?))*cos(radians(post.latitude))*cos"+
+                            "(radians(post.longitude)-radians(?))+sin(radians(?))*sin(radians(post.latitude))))) as distance,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where (date<? or (date=? and postnum<?)) and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid in (select userid from follow where platform=? and account=?)  order by date desc,postnum desc limit 20"
+                
+                        }
+                
+                    }
+                    connection.query(query,param,function(err,result){
+                        if(err)
+                        {
+                            console.log(err)
+                        }
+                        else
+                        {
+                            if(result && result.length)
+                            {
+                                res.json({
+                                    resultCode:200,
+                                    posts:result
+                                
+                                })
+                            }
+                            else{
+                                res.json({
+                                    resultCode:100,
+                                    posts:[]
+                                })
+                
+                            } 
+                        }
+                    })
+                
+                        
+                    
+                }
+            })
+        }
+        })
 })
 app.post('/getNewPosts',verifyToken,(req,res)=>{
     //var platform=req.body.platform
