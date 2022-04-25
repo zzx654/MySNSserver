@@ -2966,6 +2966,127 @@ app.post('/getFollowingPosts',verifyToken,(req,res)=>{
         }
         })
 })
+app.post('/getuserPosts',verifyToken,(req,res)=>{
+    //var platform=req.body.platform
+    //var account=req.body.account
+    var userid=req.body.userid
+    var postnum=req.body.lastpostnum
+    var postdate=req.body.lastpostdate
+    var latitude=req.body.latitude
+    var longitude=req.body.longitude
+    var param=[]
+    var query=""
+    var getmy='select *from user where platform=? and account=?'
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+        {
+            res.json({
+                resultCode:100,
+                posts:[]
+            })
+        }
+        else
+        {
+            var platform=authData.user.platform
+            var account=authData.user.account
+            connection.query(getmy,[platform,account],function(err,myresult){
+                if(err)
+                {
+                    console.log(err)
+                }
+                else
+                {
+                    if(latitude==undefined)
+                    {
+                        if(postnum==undefined)
+                        {
+                            param=[userid]
+                            query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where userid=? order by date desc,postnum desc limit 20"
+                        }
+                        else
+                        {
+                            param=[postdate,postdate,postnum,userid]
+                            query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where (date<? or (date=? and postnum<?)) and userid=? order by date desc,postnum desc limit 20"
+                        
+                        }
+                    }
+                    else
+                    {
+                        if(postnum==undefined)
+                        {
+                            param=[latitude,longitude,latitude,userid]
+                            query="select post.postnum,post.postid,post.userid,post.vote,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,if(isnull(post.latitude),-100.0,(6371*acos(cos(radians(?))*cos(radians(post.latitude))*cos"+
+                            "(radians(post.longitude)-radians(?))+sin(radians(?))*sin(radians(post.latitude))))) as distance,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where userid=? order by date desc,postnum desc limit 20"
+                        }
+                        else
+                        {
+                            param=[latitude,longitude,latitude,postdate,postdate,postnum,userid]
+                            query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,if(isnull(post.latitude),-100.0,(6371*acos(cos(radians(?))*cos(radians(post.latitude))*cos"+
+                            "(radians(post.longitude)-radians(?))+sin(radians(?))*sin(radians(post.latitude))))) as distance,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where (date<? or (date=? and postnum<?)) and userid=? order by date desc,postnum desc limit 20"
+                
+                        }
+                
+                    }
+                    connection.query(query,param,function(err,result){
+                        if(err)
+                        {
+                            console.log(err)
+                        }
+                        else
+                        {
+                            if(result && result.length)
+                            {
+                                res.json({
+                                    resultCode:200,
+                                    posts:result
+                                
+                                })
+                            }
+                            else{
+                                res.json({
+                                    resultCode:100,
+                                    posts:[]
+                                })
+                
+                            } 
+                        }
+                    })
+                
+                        
+                    
+                }
+            })
+        }
+        })
+})
 app.post('/getNewPosts',verifyToken,(req,res)=>{
     //var platform=req.body.platform
     //var account=req.body.account
@@ -5308,6 +5429,7 @@ app.post('/requestchat',verifyToken,(req,res)=>{
             var getmy='select *from user where platform=? and account=?'
         
             var getuser='select *from user where userid=?'
+            var checkblock='select *from block where (userid=? and blockeduserid=?) or (userid=? and blockeduserid=?)'
         
         
             var searchroom='select *from chatroom where organizer=? and participant=? and joined=0'
@@ -5322,100 +5444,119 @@ app.post('/requestchat',verifyToken,(req,res)=>{
                 }
                 else
                 {
-                    connection.query(searchroom,[myresult[0].userid,userid],function(err,result){
+                    connection.query(checkblock,[userid,myresult[0].userid,userid,myresult[0].userid],function(err,result){
                         if(err)
                         {
                             console.log(err)
                         }
-                        else
-                        {
-                            if(result.length==0)
+                        else{
+                            if(result.length!=0)
                             {
-        
-                                connection.query(getuser,userid,function(err,userresult){
+                                res.json({
+                                    resultCode:500,
+                                    value:500
+                                })
+                            }
+                            else
+                            {
+                                connection.query(searchroom,[myresult[0].userid,userid],function(err,result){
                                     if(err)
                                     {
                                         console.log(err)
                                     }
                                     else
                                     {
-
-                                        if(userresult[0].chatreceive==1)
+                                        if(result.length==0)
                                         {
-                                            connection.query(insertchatroom,[roomid,myresult[0].userid,userid,0],function(err,result){
+                    
+                                            connection.query(getuser,userid,function(err,userresult){
                                                 if(err)
                                                 {
                                                     console.log(err)
                                                 }
                                                 else
                                                 {
-                                                    connection.query(searchuserrooms,['none',userid],function(err,roomresult){
-                                                        if(err)
-                                                        {
-                                                            console.log(err)
-                                                        }
-                                                        else{
-                                                          
-                                                            console.log(roomresult)
-                                                            io.to(userresult[0].socketid).emit('updatechatrequest',JSON.stringify(roomresult))
-
-                                                            console.log(userresult[0].fcmtoken)
-                                                            var payload={
-                                                                data:{
-                                                                    title:'고민나눔',
-                                                                    message:myresult[0].nickname+'님이 대화를 요청했습니다',
-                                                                    notitype:'comment',
-                                                                    click_action:'NOTIFICATION_CLICK'
-                                                                },
-                                                                token:userresult[0].fcmtoken
-                                                            }
-                                                            if(userresult[0].fcmtoken!="")
-                                                            {
-                                                                admin.messaging().send(payload)
-                                                                .then(function(response){
-                                                                    console.log("Succesfully send message",response)
-                                                                })
-                                                                .catch(function(error){
-                                                                    console.log("Error sending message",error)
-                                                                })
-                                                            }
-                                                            res.json({
-                                                                resultCode:200,
-                                                                value:200
-                                                            })
-                                                        }
-                                                    })
-
             
+                                                    if(userresult[0].chatreceive==1)
+                                                    {
+                                                        connection.query(insertchatroom,[roomid,myresult[0].userid,userid,0],function(err,result){
+                                                            if(err)
+                                                            {
+                                                                console.log(err)
+                                                            }
+                                                            else
+                                                            {
+                                                                connection.query(searchuserrooms,['none',userid],function(err,roomresult){
+                                                                    if(err)
+                                                                    {
+                                                                        console.log(err)
+                                                                    }
+                                                                    else{
+                                                                      
+                                                                        console.log(roomresult)
+                                                                        io.to(userresult[0].socketid).emit('updatechatrequest',JSON.stringify(roomresult))
+            
+                                                                        console.log(userresult[0].fcmtoken)
+                                                                        var payload={
+                                                                            data:{
+                                                                                title:'고민나눔',
+                                                                                message:myresult[0].nickname+'님이 대화를 요청했습니다',
+                                                                                notitype:'comment',
+                                                                                click_action:'NOTIFICATION_CLICK'
+                                                                            },
+                                                                            token:userresult[0].fcmtoken
+                                                                        }
+                                                                        if(userresult[0].fcmtoken!="")
+                                                                        {
+                                                                            admin.messaging().send(payload)
+                                                                            .then(function(response){
+                                                                                console.log("Succesfully send message",response)
+                                                                            })
+                                                                            .catch(function(error){
+                                                                                console.log("Error sending message",error)
+                                                                            })
+                                                                        }
+                                                                        res.json({
+                                                                            resultCode:200,
+                                                                            value:200
+                                                                        })
+                                                                    }
+                                                                })
+            
+                        
+                                                            }
+                                                        })
+                                                    }
+                                                    else
+                                                    {
+                                                        res.json({
+                                                            resultCode:300,
+                                                            value:300
+                                                        })
+                                                    }
+                                                    
+                                                    
+                    
+                    
+                                            
                                                 }
                                             })
+                                        
                                         }
                                         else
                                         {
                                             res.json({
-                                                resultCode:300,
-                                                value:300
+                                                resultCode:400,
+                                                value:400
                                             })
+              
                                         }
-                                        
-                                        
-        
-        
-                                
                                     }
                                 })
-                            
-                            }
-                            else
-                            {
-                                res.json({
-                                    resultCode:400,
-                                    value:400
-                                })
-  
                             }
                         }
                     })
+                   
                 }
             })
         
@@ -5952,6 +6093,71 @@ app.post('/withdrawal',verifyToken,(req,res)=>{
         }
     })
 
+})
+app.post("/checkuser",verifyToken,(req,res)=>{
+    var userid=req.body.userid
+    var getmy='select *from user where platform=? and account=?'
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+        {
+        console.log('인증오류발생')
+        }
+        else
+        {
+            var platform=authData.user.platform
+            var account=authData.user.account
+            connection.query(getmy,[platform,account],function(err,myresult){
+                if(err)
+                {
+
+                }
+                else{
+                    var checkblock='select *from block where (userid=? and blockeduserid=?) or (userid=? and blockeduserid=?)'
+                    var checkwithdrawal='select *from user where userid=?'
+
+                    connection.query(checkblock,[userid,myresult[0].userid,myresult[0].userid,userid],function(err,result){
+                        if(err)
+                        {
+
+                        }
+                        else{
+                            if(result.length!=0)
+                            {
+                                res.json({
+                                    resultCode:500,
+                                    value:userid
+                                })
+                            }
+                            else{
+                                connection.query(checkwithdrawal,userid,function(err,result){
+                                    if(err)
+                                    {
+
+                                    }
+                                    else{
+                                        if(result[0].platform=='OUT')
+                                        {
+                                            res.json({
+                                                resultCode:400,
+                                                value:userid
+                                            })
+                                        }
+                                        else{
+                                            res.json({
+                                                resultCode:200,
+                                                value:userid
+                                            })
+                                        }
+                                    }
+                                })
+                            }
+                        }
+                    })
+                    
+                }
+            })
+        }
+    })
 })
 app.post("/getuserprofile",(req,res)=>{
     var userid=req.body.userid
