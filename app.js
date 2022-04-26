@@ -787,7 +787,7 @@ app.post('/postContents',verifyToken,(req,res)=>{
    
 
 })
-app.pos('/checknick',(req,res)=>{
+app.post('/checknick',(req,res)=>{
     var nickname=req.body.nickname
     var checknick='select *from user where nickname=?'
     connection.query(checknick,nickname,function(err,result){
