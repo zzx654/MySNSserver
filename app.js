@@ -148,7 +148,6 @@ app.post('/upload', fileUpload.single('image'), (req, res) => {
   res.send(JSON.stringify(imageData))
 })
 app.post('/uploadprofileimg', verifyToken,upload.single('image'), (req, res) => {
-    console.log('checkspeed!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     console.log(req.file)
     jwt.verify(req.token,'secretkey',(err,authData)=>{
         if(err)
@@ -2132,7 +2131,7 @@ app.post('/getSearchedPerson',verifyToken,(req,res)=>{
                         sql="select *from(select user.userid,nickname,gender,if(isnull(user.profileimage),?,user.profileimage) as profileimage,if(isnull(myfollow.account),0,1) as following from"+
                         " user left outer join (select *from follow where platform=? and account=?) myfollow on user.userid=myfollow.userid)searcheduser"+
                         " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid<? and nickname like ? order by userid desc limit 20"
-                        param=['none',platform,account,myresult[0].userid,myresult[0].userid,myresult[0].userid,nickname]
+                        param=['none',platform,account,myresult[0].userid,myresult[0].userid,lastuserid,nickname]
                     }
                     connection.query(sql,param,function(err,result){
                         if(err)
