@@ -20,11 +20,18 @@ const e = require('express');
 
 const sharp = require("sharp");
 const multer = require('multer')
+const multerS3=require('multer-s3')
+const AWS=require("aws-sdk")
  const path = require('path');
 const { verify } = require('crypto');
-
+const s3bucket = new AWS.S3({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    region: process.env.AWS_REGION
+  });
 const randomstring = require('randomstring');
 const { isBuffer } = require('util');
+require('dotenv').config()
 const fileUpload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
@@ -68,13 +75,27 @@ const fileUpload = multer({
   },
 })
 
-
+const upload = multer({
+    storage: multerS3({
+      s3: s3bucket,
+      bucket: process.env.S3_BUCKET_NAME,
+      key: function(req, file, cb){
+        const fileName = file.originalname.toLowerCase().split(" ").join("-");
+        cb(null, Date.now() + "-" + fileName);
+      },
+      acl: "public-read"
+    })
+  });
 const admin=require("firebase-admin")
 
-let serviceAccount=require("C:/Users/LMH/Desktop/portfolio/app-portfolio-9cc0c-firebase-adminsdk-pruyz-5d651ebb3f.json");
+
 const { rejects } = require('assert');
 
-admin.initializeApp({ credential: admin.credential.cert(serviceAccount), });
+admin.initializeApp({ credential: admin.credential.cert({
+    "projectId":process.env.FIREBASE_PROJECT_ID,
+    "privateKey":process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    "clientEmail":process.env.FIREBASE_CLIENT_EMAIL,
+}), });
 
 app.get('/stream',(req,res)=>{
     console.log(req.query.name)
@@ -82,27 +103,27 @@ app.get('/stream',(req,res)=>{
     const rstream=fs.createReadStream(file)
     rstream.pipe(res)
 })
-app.post('/uploadaudio',fileUpload.single('media'),(req,res)=>{
+app.post('/uploadaudio',upload.single('media'),(req,res)=>{
     console.log(req.file)
   
   
   const Data = {
     resultCode: 1,
-    uri : res.req.file.filename
+    uri : req.file.location
   }
   res.send(JSON.stringify(Data))
 })
 
 
 
-app.post('/uploadmultiple',fileUpload.array('image'),(req,res)=>{
+app.post('/uploadmultiple',upload.array('image'),(req,res)=>{
     //console.log(req.files)
     var imgJsonArray=new Array()
     var imgJson=new Object()
     for(var i=0;i<res.req.files.length;i++)
     {
         imgJson={}
-        imgJson.imageUri='http://192.168.219.102:80/' +req.files[i].filename
+        imgJson.imageUri=req.files[i].location
         console.log(imgJson.imageUri)
         imgJsonArray.push(imgJson)
         console.log(imgJsonArray[i].imageUri)
@@ -126,18 +147,45 @@ app.post('/upload', fileUpload.single('image'), (req, res) => {
   }
   res.send(JSON.stringify(imageData))
 })
-app.post('/uploadprofileimg', fileUpload.single('image'), (req, res) => {
+app.post('/uploadprofileimg', verifyToken,upload.single('image'), (req, res) => {
     console.log(req.file)
-    var image='http://192.168.219.102:80/' +req.file.filename
-    res.json({
-        resultCode:200,
-        imageUri:image
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+        {
+        console.log('인증오류발생')
+        }
+        else
+        {
+            var platform=authData.user.platform
+            var account=authData.user.account
+            var getmy='select *from user where platform=? and account=?'
+            connection.query(getmy,[platform,account],function(err,myresult){
+                if(err)
+                {
+                    console.log(err)
+                }
+                else
+                {
+                    var image=req.file.location
+                    const result={
+                        ImageUrl:image,
+                        resultCode:200
+                    }
+                    io.to(myresult[0].socketid).emit('getuploadedimg',JSON.stringify(result))
+                    res.json({
+                        resultCode:200,
+                        imageUri:image
+                    })
+                }
+            })
+        }
     })
+  
 
   })
   app.post('/uploadimg', fileUpload.single('image'), (req, res) => {
     console.log(req.file)
-    var image='http://192.168.219.102:80/' +req.file.filename
+    var image='https://socialanony.herokuapp.com/' +req.file.filename
     res.json({
         resultCode:200,
         imageUri:image
@@ -303,7 +351,7 @@ io.sockets.on('connection', (socket) => {
   socket.on('newImage', (data) => {
     const messageData = JSON.parse(data)
     // 안드로이드 에뮬레이터 기준으로 url은 10.0.2.2, 스마트폰에서 실험해보고 싶으면 자신의 ip 주소로 해야 한다.
-    messageData.content = 'http://192.168.219.100:80/' + messageData.content
+    messageData.content = 'https://socialanony.herokuapp.com/' + messageData.content
     console.log(`[Room Number ${messageData.roomid}] ${messageData.sendername} : ${messageData.content}`)
     socket.broadcast.to(`${messageData.roomid}`).emit('update', JSON.stringify(messageData))
   })
@@ -313,16 +361,38 @@ io.sockets.on('connection', (socket) => {
   })
 })
 
-
-var connection = mysql.createConnection({
-    host: 'localhost',
-    user: "root",
-    database: "portfolio",
-    password: "audgks167",
+var db_config ={
+    host: 'us-cdbr-east-05.cleardb.net',
+    user: "b6329179833105",
+    database: "heroku_3ffce85cd7fd33c",
+    password: "41ebc80c",
     port: "3306",
     charset:"utf8mb4",
     dateStrings:'date'
-});
+}
+var connection; 
+function handleDisconnect() {
+    connection = mysql.createConnection(db_config); // Recreate the connection, since
+                                                    // the old one cannot be reused.
+  
+    connection.connect(function(err) {              // The server is either down
+      if(err) {                                     // or restarting (takes a while sometimes).
+        console.log('error when connecting to db:', err);
+        setTimeout(handleDisconnect, 2000); // We introduce a delay before attempting to reconnect,
+      }                                     // to avoid a hot loop, and to allow our node script to
+    });                                     // process asynchronous requests in the meantime.
+                                            // If you're also serving http, display a 503 error.
+    connection.on('error', function(err) {
+      console.log('db error', err);
+      if(err.code === 'PROTOCOL_CONNECTION_LOST') { // Connection to the MySQL server is usually
+        handleDisconnect();                         // lost due to either server restart, or a
+      } else {                                      // connnection idle timeout (the wait_timeout
+        throw err;                                  // server variable configures this)
+      }
+    });
+  }
+  
+  handleDisconnect();
 app.use(express.urlencoded({extended: true}));
 app.use(express.json())
 app.get('/api',(req,res)=>{
@@ -686,8 +756,7 @@ app.post('/postContents',verifyToken,(req,res)=>{
                 postparam[i++]=date
                 postparam[i++]=image
                 postparam[i]=audio
-                console.log(postquery)
-                console.log(postparam)
+    
                 connection.query(postquery,[postparam],function(err,result){
                     if(err)
                     {
@@ -717,6 +786,32 @@ app.post('/postContents',verifyToken,(req,res)=>{
    
 
 })
+app.post('/checknick',(req,res)=>{
+    var nickname=req.body.nickname
+    var checknick='select *from user where nickname=?'
+    connection.query(checknick,nickname,function(err,result){
+        if(err)
+        {
+            console.log(err)
+        }
+        else
+        {
+            if(result.length==0)
+            {
+                res.json({
+                    resultCode:200,
+                    value:200
+                })
+            }
+            else{
+                res.json({
+                    resultCode:300,
+                    value:300
+                })
+            }
+        }
+    })
+})
 app.post('/editprofile',verifyToken,(req,res)=>{
     console.log('editprofile')
     jwt.verify(req.token,'secretkey',(err,authData)=>{
@@ -739,7 +834,7 @@ app.post('/editprofile',verifyToken,(req,res)=>{
 
     if(imageuri==undefined)
     {
-        query='update user set nickname=? where platform=? and account=?'
+        query='update user set nickname=?,profileimage=NULL where platform=? and account=?'
         param=[nickname,platform,account]
     }
     else
@@ -993,8 +1088,7 @@ app.post('/api/login',(req,res)=>{
                      
                     }
                     else{
-                        //console.log(password)
-                        //console.log(result[0].password)
+    
                         message='비밀번호가 틀렸습니다!'
                         res.json({
                             message:'비밀번호가 틀렸습니다!',
@@ -1759,6 +1853,47 @@ app.post('/toggleBookmarkPost',verifyToken,(req,res)=>{
 
 
 })
+app.post('/toggleFollow',verifyToken,(req,res)=>{
+    var userid=req.body.userid
+    var following=req.body.following
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+        {
+            console.log('인증failed')
+        }
+        else
+        {
+            var platform=authData.user.platform
+            var account=authData.user.account
+            var query=""
+            var param=[userid,platform,account]
+            if(following==0)
+            {
+                query="insert into follow (userid,platform,account) values(?,?,?)"
+            
+            }
+            else{
+                query="delete from follow where userid=? and platform=? and account=?"
+            }
+            connection.query(query,param,function(err,result){
+                if(err)
+                {
+                    res.json({
+                        resultCode:400,
+                        value:400
+                    })
+                }
+                else
+                {
+                    res.json({
+                        resultCode:200,
+                        value:200
+                    })
+                }
+            })
+        }
+    })
+})
 app.post('/toggleLikeTag',verifyToken,(req,res)=>{
     //var platform=req.body.platform
     //var account=req.body.account
@@ -1810,6 +1945,229 @@ app.post('/toggleLikeTag',verifyToken,(req,res)=>{
    
 
 })
+app.post('/getFollowingPerson',verifyToken,(req,res)=>{
+    var lastuserid=req.body.lastuserid
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+        {
+            res.json({
+                resultCode:100,
+                persons:[]
+            })
+        }
+        else
+        {
+            var platform=authData.user.platform
+            var account=authData.user.account
+            var param=[platform,account]
+          
+            var getmyid="select *from user where platform=? and account=?"
+            var sql=""
+            connection.query(getmyid,param,function(err,myresult){
+                if(err)
+                {
+                    console.log(err)
+                }
+                else
+                {
+                    if(lastuserid==undefined)
+                    {
+                        sql="select *from(select user.userid,nickname,gender,if(isnull(profileimage),?,profileimage) as profileimage,if(isnull(myfollow.account),0,1) as following from"+
+                        " user left outer join (select *from follow where platform=? and account=?) myfollow on user.userid=myfollow.userid)searcheduser"+
+                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid in (select userid from follow where platform=? and account=?) order by userid desc limit 20"
+                        param=['none',platform,account,myresult[0].userid,myresult[0].userid,platform,account]
+                    }
+                    else{
+                        sql="select *from(select user.userid,nickname,gender,if(isnull(user.profileimage),?,user.profileimage) as profileimage,if(isnull(myfollow.account),0,1) as following from"+
+                        " user left outer join (select *from follow where platform=? and account=?) myfollow on user.userid=myfollow.userid)searcheduser"+
+                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?)  and userid in (select userid from follow where platform=? and account=?) and userid<?  order by userid desc limit 20"
+                        param=['none',platform,account,myresult[0].userid,myresult[0].userid,platform,account,myresult[0].userid]
+                    }
+                    connection.query(sql,param,function(err,result){
+                        if(err)
+                        {
+                            console.log(err)
+                            res.json({
+                                resultCode:400,
+                                persons:[]
+                            })
+
+                        }
+                        else{
+                            if(result.length==0)
+                            {
+                                res.json({
+                                    resultCode:300,
+                                    persons:[]
+                                })
+                            }
+                            else
+                            {
+                                res.json({
+                                    resultCode:200,
+                                    persons:result
+                                })
+                            }
+                        }
+                    })
+                }
+            })
+
+            
+           
+        }
+    })
+})
+app.post('/getSearchedFollowingPerson',verifyToken,(req,res)=>{
+    var nickname=req.body.nickname
+    var lastuserid=req.body.lastuserid
+    nickname="%"+nickname+"%"
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+        {
+            res.json({
+                resultCode:100,
+                persons:[]
+            })
+        }
+        else
+        {
+            var platform=authData.user.platform
+            var account=authData.user.account
+            var param=[platform,account]
+          
+            var getmyid="select *from user where platform=? and account=?"
+            var sql=""
+            connection.query(getmyid,param,function(err,myresult){
+                if(err)
+                {
+                    console.log(err)
+                }
+                else
+                {
+                    if(lastuserid==undefined)
+                    {
+                        sql="select *from(select user.userid,nickname,gender,if(isnull(profileimage),?,profileimage) as profileimage,if(isnull(myfollow.account),0,1) as following from"+
+                        " user left outer join (select *from follow where platform=? and account=?) myfollow on user.userid=myfollow.userid)searcheduser"+
+                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid in (select userid from follow where platform=? and account=?) and nickname like ? order by userid desc limit 20"
+                        param=['none',platform,account,myresult[0].userid,myresult[0].userid,platform,account,nickname]
+                    }
+                    else{
+                        sql="select *from(select user.userid,nickname,gender,if(isnull(user.profileimage),?,user.profileimage) as profileimage,if(isnull(myfollow.account),0,1) as following from"+
+                        " user left outer join (select *from follow where platform=? and account=?) myfollow on user.userid=myfollow.userid)searcheduser"+
+                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid in (select userid from follow where platform=? and account=?) and userid<? and nickname like ? order by userid desc limit 20"
+                        param=['none',platform,account,myresult[0].userid,myresult[0].userid,platform,account,myresult[0].userid,nickname]
+                    }
+                    connection.query(sql,param,function(err,result){
+                        if(err)
+                        {
+                            console.log(err)
+                            res.json({
+                                resultCode:400,
+                                persons:[]
+                            })
+
+                        }
+                        else{
+                            if(result.length==0)
+                            {
+                                res.json({
+                                    resultCode:300,
+                                    persons:[]
+                                })
+                            }
+                            else
+                            {
+                                res.json({
+                                    resultCode:200,
+                                    persons:result
+                                })
+                            }
+                        }
+                    })
+                }
+            })
+
+            
+           
+        }
+    })
+})
+app.post('/getSearchedPerson',verifyToken,(req,res)=>{
+    var nickname=req.body.nickname
+    var lastuserid=req.body.lastuserid
+    nickname="%"+nickname+"%"
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+        {
+            res.json({
+                resultCode:100,
+                persons:[]
+            })
+        }
+        else
+        {
+            var platform=authData.user.platform
+            var account=authData.user.account
+            var param=[platform,account]
+          
+            var getmyid="select *from user where platform=? and account=?"
+            var sql=""
+            connection.query(getmyid,param,function(err,myresult){
+                if(err)
+                {
+                    console.log(err)
+                }
+                else
+                {
+                    if(lastuserid==undefined)
+                    {
+                        sql="select *from(select user.userid,nickname,gender,if(isnull(profileimage),?,profileimage) as profileimage,if(isnull(myfollow.account),0,1) as following from"+
+                        " user left outer join (select *from follow where platform=? and account=?) myfollow on user.userid=myfollow.userid)searcheduser"+
+                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and nickname like ? order by userid desc limit 20"
+                        param=['none',platform,account,myresult[0].userid,myresult[0].userid,nickname]
+                    }
+                    else{
+                        sql="select *from(select user.userid,nickname,gender,if(isnull(user.profileimage),?,user.profileimage) as profileimage,if(isnull(myfollow.account),0,1) as following from"+
+                        " user left outer join (select *from follow where platform=? and account=?) myfollow on user.userid=myfollow.userid)searcheduser"+
+                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid<? and nickname like ? order by userid desc limit 20"
+                        param=['none',platform,account,myresult[0].userid,myresult[0].userid,lastuserid,nickname]
+                    }
+                    connection.query(sql,param,function(err,result){
+                        if(err)
+                        {
+                            console.log(err)
+                            res.json({
+                                resultCode:400,
+                                persons:[]
+                            })
+
+                        }
+                        else{
+                            if(result.length==0)
+                            {
+                                res.json({
+                                    resultCode:300,
+                                    persons:[]
+                                })
+                            }
+                            else
+                            {
+                                res.json({
+                                    resultCode:200,
+                                    persons:result
+                                })
+                            }
+                        }
+                    })
+                }
+            })
+
+            
+           
+        }
+    })
+})
 app.post('/getPopularTag',verifyToken,(req,res)=>{
     
     //var platform=req.body.platform
@@ -1828,8 +2186,8 @@ app.post('/getPopularTag',verifyToken,(req,res)=>{
             var account=authData.user.account
             var param=[platform,account]
             var sql="select toptags.tagname,toptags.count,if(isnull(mytags.account),0,1) as isLiked from (select tagname,count(*) as count "+
-            "from posttag group by tagname having count>0) toptags left outer join (select *from favoritetags where platform=? and account=?) "+
-            "mytags on toptags.tagname=mytags.tagname"
+            "from posttag group by tagname having count>0 ) toptags left outer join (select *from favoritetags where platform=? and account=?) "+
+            "mytags on toptags.tagname=mytags.tagname order by count desc"
             connection.query(sql,param,function(err,result){
                 if(err)
                 {
@@ -2014,10 +2372,7 @@ app.post('/getTagLiked',verifyToken,(req,res)=>{
 app.post('/getSearchedTag',verifyToken,(req,res)=>{
     var tagname=req.body.tagname
     tagname="%"+tagname+"%"
-    //var platform=req.body.platform
-    //var account=req.body.account
-    //var param=[platform,account,tagname]
-    //console.log(param)
+
     jwt.verify(req.token,'secretkey',(err,authData)=>{
         if(err)
         {
@@ -2110,7 +2465,7 @@ app.post('/getHotPosts',verifyToken,(req,res)=>{
                             " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
                             " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id)hot"+
                             
-                            " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) order by commentcount+likecount desc,postnum desc limit 5"
+                            " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) order by commentcount+likecount desc,postnum desc limit 20"
                         }
                         else
                         {
@@ -2123,7 +2478,7 @@ app.post('/getHotPosts',verifyToken,(req,res)=>{
                             " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
         
                             " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id)hot"+
-                            " where (commentcount+likecount<? or (commentcount+likecount=? and postnum<?)) and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) order by likecount+commentcount desc,postnum desc limit 5"
+                            " where (commentcount+likecount<? or (commentcount+likecount=? and postnum<?)) and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) order by likecount+commentcount desc,postnum desc limit 20"
                         }
                     }
                     else
@@ -2139,7 +2494,7 @@ app.post('/getHotPosts',verifyToken,(req,res)=>{
                             " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                             " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
                             " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id)hot "+
-                            " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) order by likecount+commentcount desc,postnum desc limit 5"
+                            " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) order by likecount+commentcount desc,postnum desc limit 20"
                         }
                         else
                         {
@@ -2153,7 +2508,7 @@ app.post('/getHotPosts',verifyToken,(req,res)=>{
                             " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                             " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
                             " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id)hot "+
-                            " where (commentcount+likecount<? or (commentcount+likecount=? and postnum<?)) and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) order by likecount+commentcount desc,postnum desc limit 5"
+                            " where (commentcount+likecount<? or (commentcount+likecount=? and postnum<?)) and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) order by likecount+commentcount desc,postnum desc limit 20"
                         }
                     }
                             console.log(param)
@@ -2232,10 +2587,10 @@ var getmy='select *from user where platform=? and account=?'
                     +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
                     +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
                     " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
-                    "left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                    " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                     " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
                     " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id)hot"+
-                    " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) having postid in (select postid from posttag where tagname=?) order by commentcount+likecount desc,postnum desc limit 5"
+                    " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) having postid in (select postid from posttag where tagname=?) order by commentcount+likecount desc,postnum desc limit 20"
                 }
                 else
                 {
@@ -2247,7 +2602,7 @@ var getmy='select *from user where platform=? and account=?'
                     " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                     " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
                     " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id)hot"+
-                    " where (commentcount+likecount<? or (commentcount+likecount=? and postnum<?)) and userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) having postid in (select postid from posttag where tagname=?) order by commentcount+likecount desc,postnum desc limit 5"
+                    " where (commentcount+likecount<? or (commentcount+likecount=? and postnum<?)) and userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) having postid in (select postid from posttag where tagname=?) order by commentcount+likecount desc,postnum desc limit 20"
                 }
             }
             else
@@ -2263,7 +2618,7 @@ var getmy='select *from user where platform=? and account=?'
                     " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                     " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
                     " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id)hot"+
-                    " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?)  having postid in (select postid from posttag where tagname=?) order by commentcount+likecount desc,postnum desc limit 5"
+                    " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?)  having postid in (select postid from posttag where tagname=?) order by commentcount+likecount desc,postnum desc limit 20"
                 }
                 else
                 {
@@ -2276,7 +2631,7 @@ var getmy='select *from user where platform=? and account=?'
                     " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                     " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
                     " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id)hot"+
-                    " where (commentcount+likecount<? or (commentcount+likecount=? and postnum<?)) and userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) having postid in (select postid from posttag where tagname=?) order by commentcount+likecount desc,postnum desc limit 5"
+                    " where (commentcount+likecount<? or (commentcount+likecount=? and postnum<?)) and userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) having postid in (select postid from posttag where tagname=?) order by commentcount+likecount desc,postnum desc limit 20"
                 }
             }
              connection.query(query,param,function(err,result){
@@ -2347,7 +2702,7 @@ app.post('/getmyPosts',verifyToken,(req,res)=>{
                             " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                             " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                             " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                            " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and post.platform=? and post.account=? order by date desc,postnum desc limit 5"
+                            " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and post.platform=? and post.account=? order by date desc,postnum desc limit 20"
                         }
                         else
                         {
@@ -2360,7 +2715,7 @@ app.post('/getmyPosts',verifyToken,(req,res)=>{
                             " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                             " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                             " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                            " where (date<? or (date=? and postnum<?)) and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and post.platform=? and post.account=? order by date desc,postnum desc limit 5"
+                            " where (date<? or (date=? and postnum<?)) and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and post.platform=? and post.account=? order by date desc,postnum desc limit 20"
                 
                         }
                 
@@ -2436,7 +2791,7 @@ app.post('/getBookmarkedPosts',verifyToken,(req,res)=>{
                         " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                         " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                         " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                        " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and post.postid in (select postid from bookmark where platform=? and account=?) order by date desc,postnum desc limit 5"
+                        " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and post.postid in (select postid from bookmark where platform=? and account=?) order by date desc,postnum desc limit 20"
                     }
                     else
                     {
@@ -2448,7 +2803,7 @@ app.post('/getBookmarkedPosts',verifyToken,(req,res)=>{
                         " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                         " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                         " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                        " where (date<? or (date=? and postnum<?)) and userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and post.postid in (select postid from bookmark where platform=? and account=?) order by date desc,postnum desc limit 5"
+                        " where (date<? or (date=? and postnum<?)) and userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and post.postid in (select postid from bookmark where platform=? and account=?) order by date desc,postnum desc limit 20"
                     
                     }
                 }
@@ -2465,7 +2820,7 @@ app.post('/getBookmarkedPosts',verifyToken,(req,res)=>{
                         " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                         " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                         " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                        " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and post.postid in (select postid from bookmark where platform=? and account=?) order by date desc,postnum desc limit 5"
+                        " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and post.postid in (select postid from bookmark where platform=? and account=?) order by date desc,postnum desc limit 20"
                     }
                     else
                     {
@@ -2478,7 +2833,7 @@ app.post('/getBookmarkedPosts',verifyToken,(req,res)=>{
                         " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                         " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                         " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                        " where (date<? or (date=? and postnum<?)) and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and post.postid in (select postid from bookmark where platform=? and account=?) order by date desc,postnum desc limit 5"
+                        " where (date<? or (date=? and postnum<?)) and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and post.postid in (select postid from bookmark where platform=? and account=?) order by date desc,postnum desc limit 20"
             
                     }
             
@@ -2515,6 +2870,247 @@ app.post('/getBookmarkedPosts',verifyToken,(req,res)=>{
 
    
 
+})
+app.post('/getFollowingPosts',verifyToken,(req,res)=>{
+    //var platform=req.body.platform
+    //var account=req.body.account
+    var postnum=req.body.lastpostnum
+    var postdate=req.body.lastpostdate
+    var latitude=req.body.latitude
+    var longitude=req.body.longitude
+    var param=[]
+    var query=""
+    var getmy='select *from user where platform=? and account=?'
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+        {
+            res.json({
+                resultCode:100,
+                posts:[]
+            })
+        }
+        else
+        {
+            var platform=authData.user.platform
+            var account=authData.user.account
+            connection.query(getmy,[platform,account],function(err,myresult){
+                if(err)
+                {
+                    console.log(err)
+                }
+                else
+                {
+                    if(latitude==undefined)
+                    {
+                        if(postnum==undefined)
+                        {
+                            param=[myresult[0].userid,myresult[0].userid,platform,account,""]
+                            query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and userid in (select userid from follow where platform=? and account=?) and anonymous=? order by date desc,postnum desc limit 20"
+                        }
+                        else
+                        {
+                            param=[postdate,postdate,postnum,myresult[0].userid,myresult[0].userid,platform,account,""]
+                            query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where (date<? or (date=? and postnum<?)) and userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and userid in (select userid from follow where platform=? and account=?)  and anonymous=?  order by date desc,postnum desc limit 20"
+                        
+                        }
+                    }
+                    else
+                    {
+                        if(postnum==undefined)
+                        {
+                            param=[latitude,longitude,latitude,myresult[0].userid,myresult[0].userid,platform,account,""]
+                            query="select post.postnum,post.postid,post.userid,post.vote,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,if(isnull(post.latitude),-100.0,(6371*acos(cos(radians(?))*cos(radians(post.latitude))*cos"+
+                            "(radians(post.longitude)-radians(?))+sin(radians(?))*sin(radians(post.latitude))))) as distance,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and userid in (select userid from follow where platform=? and account=?)  and anonymous=? order by date desc,postnum desc limit 20"
+                        }
+                        else
+                        {
+                            param=[latitude,longitude,latitude,postdate,postdate,postnum,myresult[0].userid,myresult[0].userid,platform,account,""]
+                            query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,if(isnull(post.latitude),-100.0,(6371*acos(cos(radians(?))*cos(radians(post.latitude))*cos"+
+                            "(radians(post.longitude)-radians(?))+sin(radians(?))*sin(radians(post.latitude))))) as distance,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where (date<? or (date=? and postnum<?)) and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid in (select userid from follow where platform=? and account=?)  and anonymous=? order by date desc,postnum desc limit 20"
+                
+                        }
+                
+                    }
+                    connection.query(query,param,function(err,result){
+                        if(err)
+                        {
+                            console.log(err)
+                        }
+                        else
+                        {
+                            if(result && result.length)
+                            {
+                                res.json({
+                                    resultCode:200,
+                                    posts:result
+                                
+                                })
+                            }
+                            else{
+                                res.json({
+                                    resultCode:100,
+                                    posts:[]
+                                })
+                
+                            } 
+                        }
+                    })
+                
+                        
+                    
+                }
+            })
+        }
+        })
+})
+app.post('/getuserPosts',verifyToken,(req,res)=>{
+    //var platform=req.body.platform
+    //var account=req.body.account
+    var userid=req.body.userid
+    var postnum=req.body.lastpostnum
+    var postdate=req.body.lastpostdate
+    var latitude=req.body.latitude
+    var longitude=req.body.longitude
+    var param=[]
+    var query=""
+    var getmy='select *from user where platform=? and account=?'
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+        {
+            res.json({
+                resultCode:100,
+                posts:[]
+            })
+        }
+        else
+        {
+            var platform=authData.user.platform
+            var account=authData.user.account
+            connection.query(getmy,[platform,account],function(err,myresult){
+                if(err)
+                {
+                    console.log(err)
+                }
+                else
+                {
+                    if(latitude==undefined)
+                    {
+                        if(postnum==undefined)
+                        {
+                            param=[userid,""]
+                            query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where userid=? and anonymous=? order by date desc,postnum desc limit 20"
+                        }
+                        else
+                        {
+                            param=[postdate,postdate,postnum,userid,""]
+                            query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where (date<? or (date=? and postnum<?)) and userid=? and anonymous=? order by date desc,postnum desc limit 20"
+                        
+                        }
+                    }
+                    else
+                    {
+                        if(postnum==undefined)
+                        {
+                            param=[latitude,longitude,latitude,userid,""]
+                            query="select post.postnum,post.postid,post.userid,post.vote,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,if(isnull(post.latitude),-100.0,(6371*acos(cos(radians(?))*cos(radians(post.latitude))*cos"+
+                            "(radians(post.longitude)-radians(?))+sin(radians(?))*sin(radians(post.latitude))))) as distance,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where userid=? and anonymous=? order by date desc,postnum desc limit 20"
+                        }
+                        else
+                        {
+                            param=[latitude,longitude,latitude,postdate,postdate,postnum,userid,""]
+                            query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,if(isnull(post.latitude),-100.0,(6371*acos(cos(radians(?))*cos(radians(post.latitude))*cos"+
+                            "(radians(post.longitude)-radians(?))+sin(radians(?))*sin(radians(post.latitude))))) as distance,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where (date<? or (date=? and postnum<?)) and userid=? and anonymous=? order by date desc,postnum desc limit 20"
+                
+                        }
+                
+                    }
+                    connection.query(query,param,function(err,result){
+                        if(err)
+                        {
+                            console.log(err)
+                        }
+                        else
+                        {
+                            if(result && result.length)
+                            {
+                                res.json({
+                                    resultCode:200,
+                                    posts:result
+                                
+                                })
+                            }
+                            else{
+                                res.json({
+                                    resultCode:100,
+                                    posts:[]
+                                })
+                
+                            } 
+                        }
+                    })
+                
+                        
+                    
+                }
+            })
+        }
+        })
 })
 app.post('/getNewPosts',verifyToken,(req,res)=>{
     //var platform=req.body.platform
@@ -2557,7 +3153,7 @@ app.post('/getNewPosts',verifyToken,(req,res)=>{
                             " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                             " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                             " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                            " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) order by date desc,postnum desc limit 5"
+                            " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) order by date desc,postnum desc limit 20"
                         }
                         else
                         {
@@ -2569,7 +3165,7 @@ app.post('/getNewPosts',verifyToken,(req,res)=>{
                             " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                             " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                             " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                            " where (date<? or (date=? and postnum<?)) and userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) order by date desc,postnum desc limit 5"
+                            " where (date<? or (date=? and postnum<?)) and userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) order by date desc,postnum desc limit 20"
                         
                         }
                     }
@@ -2586,7 +3182,7 @@ app.post('/getNewPosts',verifyToken,(req,res)=>{
                             " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                             " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                             " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                            " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) order by date desc,postnum desc limit 5"
+                            " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) order by date desc,postnum desc limit 20"
                         }
                         else
                         {
@@ -2599,7 +3195,7 @@ app.post('/getNewPosts',verifyToken,(req,res)=>{
                             " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                             " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                             " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                            " where (date<? or (date=? and postnum<?)) and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) order by date desc,postnum desc limit 5"
+                            " where (date<? or (date=? and postnum<?)) and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) order by date desc,postnum desc limit 20"
                 
                         }
                 
@@ -2678,7 +3274,7 @@ jwt.verify(req.token,'secretkey',(err,authData)=>{
                         " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                         " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                         " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                        " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) having post.postid in (select postid from posttag where tagname=?) order by date desc,postnum desc limit 5"
+                        " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) having post.postid in (select postid from posttag where tagname=?) order by date desc,postnum desc limit 20"
                     }
                     else
                     {
@@ -2690,7 +3286,7 @@ jwt.verify(req.token,'secretkey',(err,authData)=>{
                         " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                         " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                         " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                        " where (date<? or (date=? and postnum<?)) and userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) having post.postid in (select postid from posttag where tagname=?) order by date desc,postnum desc limit 5"
+                        " where (date<? or (date=? and postnum<?)) and userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) having post.postid in (select postid from posttag where tagname=?) order by date desc,postnum desc limit 20"
                     
                     }
                 }
@@ -2708,7 +3304,7 @@ jwt.verify(req.token,'secretkey',(err,authData)=>{
                         " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                         " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                         " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                        " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) having post.postid in (select postid from posttag where tagname=?) order by date desc,postnum desc limit 5"
+                        " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) having post.postid in (select postid from posttag where tagname=?) order by date desc,postnum desc limit 20"
                     }
                     else
                     {
@@ -2721,7 +3317,7 @@ jwt.verify(req.token,'secretkey',(err,authData)=>{
                         " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                         " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                         " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                        " where (date<? or (date=? and postnum<?)) and userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) having post.postid in (select postid from posttag where tagname=?) order by date desc,postnum desc limit 5"
+                        " where (date<? or (date=? and postnum<?)) and userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) having post.postid in (select postid from posttag where tagname=?) order by date desc,postnum desc limit 20"
             
                     }
             
@@ -2801,7 +3397,7 @@ app.post("/getNearPosts",verifyToken,(req,res)=>{
                     " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                     " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                     " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                    " where latitude is not null and userid not in (select userid from block where blockeduserid=?) and post.userid not in (select blockeduserid from block where userid=?) having distance<=? order by date desc,postnum desc limit 5"
+                    " where latitude is not null and userid not in (select userid from block where blockeduserid=?) and post.userid not in (select blockeduserid from block where userid=?) having distance<=? order by date desc,postnum desc limit 20"
                     if(postnum!=undefined){
                 
                         param=[latitude,longitude,latitude,postdate,postdate,postnum,myresult[0].userid,myresult[0].userid,distancemax]
@@ -2812,8 +3408,8 @@ app.post("/getNearPosts",verifyToken,(req,res)=>{
                         " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
                         " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid "+
                         " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
-                        "left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                        " where latitude is not null and (date<? or (date=? and postnum<?)) and post.userid not in (select userid from block where blockeduserid=?) and post.userid not in (select blockeduserid from block where userid=?) having distance<=? order by date desc,postnum desc limit 5"
+                        " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                        " where latitude is not null and (date<? or (date=? and postnum<?)) and post.userid not in (select userid from block where blockeduserid=?) and post.userid not in (select blockeduserid from block where userid=?) having distance<=? order by date desc,postnum desc limit 20"
                 
                     }
                 
@@ -4528,7 +5124,7 @@ app.post('/getReply',verifyToken,(req,res)=>{
                 " likecomment group by commentid) lik on com.commentid=lik.commentid left outer join (select commentid,platform,account from likecomment"+
                 " where platform=? and account=?) mylik on com.commentid=mylik.commentid"+
                 " left outer join (select userid as id,nickname,profileimage from user) getuser on com.userid=getuser.id"+
-                " where com.userid not in (select userid from block where blockeduserid=?) and com.userid not in (select blockeduserid from block where userid=?) order by com.time asc,com.commentid asc limit 5 "
+                " where com.userid not in (select userid from block where blockeduserid=?) and com.userid not in (select blockeduserid from block where userid=?) order by com.time asc,com.commentid asc limit 20 "
             }
             else
             {
@@ -4540,7 +5136,7 @@ app.post('/getReply',verifyToken,(req,res)=>{
                 " likecomment group by commentid) lik on com.commentid=lik.commentid left outer join (select commentid,platform,account from likecomment"+
                 " where platform=? and account=?) mylik on com.commentid=mylik.commentid"+
                 " left outer join (select userid as id,nickname,profileimage from user) getuser on com.userid=getuser.id"+
-                " where(com.time>? or (com.time=? and com.commentid>?)) and com.userid not in (select userid from block where blockeduserid=?) and com.userid not in (select blockeduserid from block where userid=?) order by com.time asc,com.commentid asc limit 5 "
+                " where(com.time>? or (com.time=? and com.commentid>?)) and com.userid not in (select userid from block where blockeduserid=?) and com.userid not in (select blockeduserid from block where userid=?) order by com.time asc,com.commentid asc limit 20 "
             }
             connection.query(query,param,function(err,result){
                 if(err)
@@ -4613,7 +5209,7 @@ app.post('/getComment',verifyToken,(req,res)=>{
         " likecomment group by commentid) lik on com.commentid=lik.commentid left outer join (select commentid,platform,account from likecomment"+
         " where platform=? and account=?) mylik on com.commentid=mylik.commentid"+
         " left outer join (select userid as id,nickname,profileimage from user) getuser on com.userid=getuser.id"+
-        " where com.userid not in (select blockeduserid from block where userid=?) and com.userid not in (select userid from block where blockeduserid=?) order by com.time asc,com.commentid asc limit 5 "
+        " where com.userid not in (select blockeduserid from block where userid=?) and com.userid not in (select userid from block where blockeduserid=?) order by com.time asc,com.commentid asc limit 20 "
     }
     else
     {
@@ -4626,7 +5222,7 @@ app.post('/getComment',verifyToken,(req,res)=>{
         " likecomment group by commentid) lik on com.commentid=lik.commentid left outer join (select commentid,platform,account from likecomment"+
         " where platform=? and account=?) mylik on com.commentid=mylik.commentid"+
         " left outer join (select userid as id,nickname,profileimage from user) getuser on com.userid=getuser.id"+
-        " where(com.time>? or (com.time=? and com.commentid>?)) and com.userid not in (select blockeduserid from block where userid=?) and com.userid not in (select userid from block where blockeduserid=?) order by com.time asc,com.commentid asc limit 5 "
+        " where(com.time>? or (com.time=? and com.commentid>?)) and com.userid not in (select blockeduserid from block where userid=?) and com.userid not in (select userid from block where blockeduserid=?) order by com.time asc,com.commentid asc limit 20 "
     }
     connection.query(getcomment,param,function(err,result){
         if(err)
@@ -4698,7 +5294,7 @@ app.post('/getHotComment',verifyToken,(req,res)=>{
                 " likecomment group by commentid) lik on com.commentid=lik.commentid left outer join (select commentid,platform,account from likecomment"+
                 " where platform=? and account=?) mylik on com.commentid=mylik.commentid"+
                 " left outer join (select userid as id,nickname,profileimage from user) getuser on com.userid=getuser.id"+
-                " where com.userid not in (select blockeduserid from block where userid=?) and com.userid not in (select userid from block where blockeduserid=?) order by likecount desc,com.commentid desc limit 5 "
+                " where com.userid not in (select blockeduserid from block where userid=?) and com.userid not in (select userid from block where blockeduserid=?) order by likecount desc,com.commentid desc limit 20 "
         
             }
             else
@@ -4713,7 +5309,7 @@ app.post('/getHotComment',verifyToken,(req,res)=>{
                 " likecomment group by commentid) lik on com.commentid=lik.commentid left outer join (select commentid,platform,account from likecomment"+
                 " where platform=? and account=?) mylik on com.commentid=mylik.commentid"+
                 " left outer join (select userid as id,nickname,profileimage from user) getuser on com.userid=getuser.id"+
-                " where com.userid not in (select blockeduserid from block where userid=?) and com.userid not in (select userid from block where blockeduserid=?) having(likecount<? or (likecount=? and com.commentid<?)) order by likecount desc,com.commentid desc limit 5 "
+                " where com.userid not in (select blockeduserid from block where userid=?) and com.userid not in (select userid from block where blockeduserid=?) having(likecount<? or (likecount=? and com.commentid<?)) order by likecount desc,com.commentid desc limit 20 "
         
             
             }
@@ -4858,6 +5454,7 @@ app.post('/requestchat',verifyToken,(req,res)=>{
             var getmy='select *from user where platform=? and account=?'
         
             var getuser='select *from user where userid=?'
+            var checkblock='select *from block where (userid=? and blockeduserid=?) or (userid=? and blockeduserid=?)'
         
         
             var searchroom='select *from chatroom where organizer=? and participant=? and joined=0'
@@ -4872,100 +5469,119 @@ app.post('/requestchat',verifyToken,(req,res)=>{
                 }
                 else
                 {
-                    connection.query(searchroom,[myresult[0].userid,userid],function(err,result){
+                    connection.query(checkblock,[userid,myresult[0].userid,userid,myresult[0].userid],function(err,result){
                         if(err)
                         {
                             console.log(err)
                         }
-                        else
-                        {
-                            if(result.length==0)
+                        else{
+                            if(result.length!=0)
                             {
-        
-                                connection.query(getuser,userid,function(err,userresult){
+                                res.json({
+                                    resultCode:500,
+                                    value:500
+                                })
+                            }
+                            else
+                            {
+                                connection.query(searchroom,[myresult[0].userid,userid],function(err,result){
                                     if(err)
                                     {
                                         console.log(err)
                                     }
                                     else
                                     {
-
-                                        if(userresult[0].chatreceive==1)
+                                        if(result.length==0)
                                         {
-                                            connection.query(insertchatroom,[roomid,myresult[0].userid,userid,0],function(err,result){
+                    
+                                            connection.query(getuser,userid,function(err,userresult){
                                                 if(err)
                                                 {
                                                     console.log(err)
                                                 }
                                                 else
                                                 {
-                                                    connection.query(searchuserrooms,['none',userid],function(err,roomresult){
-                                                        if(err)
-                                                        {
-                                                            console.log(err)
-                                                        }
-                                                        else{
-                                                          
-                                                            console.log(roomresult)
-                                                            io.to(userresult[0].socketid).emit('updatechatrequest',JSON.stringify(roomresult))
-
-                                                            console.log(userresult[0].fcmtoken)
-                                                            var payload={
-                                                                data:{
-                                                                    title:'고민나눔',
-                                                                    message:myresult[0].nickname+'님이 대화를 요청했습니다',
-                                                                    notitype:'comment',
-                                                                    click_action:'NOTIFICATION_CLICK'
-                                                                },
-                                                                token:userresult[0].fcmtoken
-                                                            }
-                                                            if(userresult[0].fcmtoken!="")
-                                                            {
-                                                                admin.messaging().send(payload)
-                                                                .then(function(response){
-                                                                    console.log("Succesfully send message",response)
-                                                                })
-                                                                .catch(function(error){
-                                                                    console.log("Error sending message",error)
-                                                                })
-                                                            }
-                                                            res.json({
-                                                                resultCode:200,
-                                                                value:200
-                                                            })
-                                                        }
-                                                    })
-
             
+                                                    if(userresult[0].chatreceive==1)
+                                                    {
+                                                        connection.query(insertchatroom,[roomid,myresult[0].userid,userid,0],function(err,result){
+                                                            if(err)
+                                                            {
+                                                                console.log(err)
+                                                            }
+                                                            else
+                                                            {
+                                                                connection.query(searchuserrooms,['none',userid],function(err,roomresult){
+                                                                    if(err)
+                                                                    {
+                                                                        console.log(err)
+                                                                    }
+                                                                    else{
+                                                                      
+                                                                        console.log(roomresult)
+                                                                        io.to(userresult[0].socketid).emit('updatechatrequest',JSON.stringify(roomresult))
+            
+                                                                        console.log(userresult[0].fcmtoken)
+                                                                        var payload={
+                                                                            data:{
+                                                                                title:'고민나눔',
+                                                                                message:myresult[0].nickname+'님이 대화를 요청했습니다',
+                                                                                notitype:'comment',
+                                                                                click_action:'NOTIFICATION_CLICK'
+                                                                            },
+                                                                            token:userresult[0].fcmtoken
+                                                                        }
+                                                                        if(userresult[0].fcmtoken!="")
+                                                                        {
+                                                                            admin.messaging().send(payload)
+                                                                            .then(function(response){
+                                                                                console.log("Succesfully send message",response)
+                                                                            })
+                                                                            .catch(function(error){
+                                                                                console.log("Error sending message",error)
+                                                                            })
+                                                                        }
+                                                                        res.json({
+                                                                            resultCode:200,
+                                                                            value:200
+                                                                        })
+                                                                    }
+                                                                })
+            
+                        
+                                                            }
+                                                        })
+                                                    }
+                                                    else
+                                                    {
+                                                        res.json({
+                                                            resultCode:300,
+                                                            value:300
+                                                        })
+                                                    }
+                                                    
+                                                    
+                    
+                    
+                                            
                                                 }
                                             })
+                                        
                                         }
                                         else
                                         {
                                             res.json({
-                                                resultCode:300,
-                                                value:300
+                                                resultCode:400,
+                                                value:400
                                             })
+              
                                         }
-                                        
-                                        
-        
-        
-                                
                                     }
                                 })
-                            
-                            }
-                            else
-                            {
-                                res.json({
-                                    resultCode:400,
-                                    value:400
-                                })
-  
                             }
                         }
                     })
+                   
                 }
             })
         
@@ -5503,6 +6119,71 @@ app.post('/withdrawal',verifyToken,(req,res)=>{
     })
 
 })
+app.post("/checkuser",verifyToken,(req,res)=>{
+    var userid=req.body.userid
+    var getmy='select *from user where platform=? and account=?'
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+        {
+        console.log('인증오류발생')
+        }
+        else
+        {
+            var platform=authData.user.platform
+            var account=authData.user.account
+            connection.query(getmy,[platform,account],function(err,myresult){
+                if(err)
+                {
+
+                }
+                else{
+                    var checkblock='select *from block where (userid=? and blockeduserid=?) or (userid=? and blockeduserid=?)'
+                    var checkwithdrawal='select *from user where userid=?'
+
+                    connection.query(checkblock,[userid,myresult[0].userid,myresult[0].userid,userid],function(err,result){
+                        if(err)
+                        {
+
+                        }
+                        else{
+                            if(result.length!=0)
+                            {
+                                res.json({
+                                    resultCode:500,
+                                    value:userid
+                                })
+                            }
+                            else{
+                                connection.query(checkwithdrawal,userid,function(err,result){
+                                    if(err)
+                                    {
+
+                                    }
+                                    else{
+                                        if(result[0].platform=='OUT')
+                                        {
+                                            res.json({
+                                                resultCode:400,
+                                                value:userid
+                                            })
+                                        }
+                                        else{
+                                            res.json({
+                                                resultCode:200,
+                                                value:userid
+                                            })
+                                        }
+                                    }
+                                })
+                            }
+                        }
+                    })
+                    
+                }
+            })
+        }
+    })
+})
 app.post("/getuserprofile",(req,res)=>{
     var userid=req.body.userid
     var query='select *from user where userid=?'
@@ -5736,7 +6417,12 @@ function send_message(phone) {
         })
     return '';
   }
-
-server.listen(80, () => {
+app.get('/hello',function(req,res){
+    res.json({
+        resultCode:300
+    })
+})
+var port = process.env.PORT || 3000;//1
+server.listen(port, () => {
     console.log(`Server listening at http://localhost:80`)
   })
