@@ -1859,7 +1859,7 @@ app.post('/toggleFollow',verifyToken,(req,res)=>{
     jwt.verify(req.token,'secretkey',(err,authData)=>{
         if(err)
         {
-            console.log('인증실패')
+            console.log('인증failed')
         }
         else
         {
