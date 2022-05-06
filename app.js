@@ -153,6 +153,10 @@ app.post('/uploadprofileimg', verifyToken,upload.single('image'), (req, res) => 
         if(err)
         {
         console.log('인증오류발생')
+        res.json({
+            resultCode:505,
+            imageUri:image
+        })
         }
         else
         {
@@ -443,6 +447,11 @@ app.post('/changepassword',verifyToken,(req,res)=>{
         if(err)
         {
         console.log('인증오류발생')
+        res.json({
+            resultCode:505,
+            value:505
+        
+        });
         }
         else
         {
@@ -818,6 +827,10 @@ app.post('/editprofile',verifyToken,(req,res)=>{
         if(err)
         {
         console.log('인증오류발생')
+        res.json({
+            resultCode:505,
+            value:505
+        })
         }
         else
         {
@@ -1276,7 +1289,7 @@ app.post('/api/login',(req,res)=>{
                 {
                     console.log('토큰정보X')
                     res.json({
-                        resultcode:500
+                        resultCode:500
                     })
                 }
                 else{
@@ -1286,7 +1299,7 @@ app.post('/api/login',(req,res)=>{
             
                         if(err){
                             res.json({
-                                resultcode:500
+                                resultCode:505
                             })
                         }else{
                             var checkProfile='select * from user where platform=? and account=?'
@@ -1302,19 +1315,19 @@ app.post('/api/login',(req,res)=>{
                                         if(result[0].nickname===null)
                                         {
                                             res.json({
-                                                resultcode:400
+                                                resultCode:400
                                             })
                                         }
                                         else{
                                             res.json({
-                                                resultcode:200
+                                                resultCode:200
                                             })
                                         }
                                     }
                                     else
                                     {
                                         res.json({
-                                            resultcode:500
+                                            resultCode:500
                                         })
                                     }
                                 }
@@ -1391,7 +1404,7 @@ app.post('/api/login',(req,res)=>{
                     
                 }
 
-                jwt.sign({user:user},'secretkey',{expiresIn:'1d'},(err,authtoken)=>{
+                jwt.sign({user:user},'secretkey',{expiresIn:'20d'},(err,authtoken)=>{
                     if(err)
                     {
                         console.log(err)
@@ -1454,8 +1467,8 @@ app.post('/api/login',(req,res)=>{
             if(err)
             {
                 res.json({
-                    resultCode:100,
-                    value:100
+                    resultCode:505,
+                    value:505
                 })
             }
             else
@@ -1508,7 +1521,7 @@ app.post('/api/login',(req,res)=>{
             if(err){
             
                 res.json({
-                    resultcode:500
+                    resultCode:505
                 })
             }else{
                 var param=[authData.user.platform,authData.user.account]
@@ -1524,18 +1537,18 @@ app.post('/api/login',(req,res)=>{
                             if(result[0].nickname===null)
                             {
                                 res.json({
-                                    resultcode:400
+                                    resultCode:400
                                 })
                             }
                             else{
                                 res.json({
-                                    resultcode:200
+                                    resultCode:200
                                 })
                             }
                         }
                         else{
                            res.json({
-                               resultcode:500
+                               resultCode:500
                             })
                         }
                     }
@@ -1555,7 +1568,7 @@ app.post('/api/logout',verifyToken,(req,res)=>{
         {
             res.json({
                 message:'로그아웃 실패',
-                resultcode:500
+                resultCode:505
             })
         }
         else
@@ -1575,7 +1588,7 @@ app.post('/api/logout',verifyToken,(req,res)=>{
                             console.log('토큰삭제및 로그아웃 성공')
                             res.json({
                                 message:'로그아웃 성공',
-                                resultcode:200
+                                resultCode:200
                             })
                         }
                 
@@ -1586,23 +1599,7 @@ app.post('/api/logout',verifyToken,(req,res)=>{
   
     
 })
-// 다른 일반적 인증(게시물게시,데이터 요청 등등)
-app.post('/api/posts',verifyToken,(req,res)=>{
-    jwt.verify(req.token,'secretkey',(err,authData)=>{
-        if(err){
-            console.log(req.token)
-            res.sendStatus(403);
-        }else{
-            console.log(authData)
-            
-            res.json({
-                message:'Post created...',
-                authData
-            });
-        }
-    });
-  
-});
+
 app.post("/searchTag",(req,res)=>{
     var searched=req.body.tagname
     var query="select tagname,count(*) as count from posttag where tagname like '"+searched+"%' group by tagname"; 
@@ -1637,7 +1634,10 @@ app.post('/toggleLikePost',verifyToken,(req,res)=>{
     jwt.verify(req.token,'secretkey',(err,authData)=>{
         if(err)
         {
-         console.log('인증오류발생')
+            res.json({
+                resultCode:505,
+                toggle:505
+            })
         }
         else
         {
@@ -1790,7 +1790,7 @@ app.post('/toggleBookmarkPost',verifyToken,(req,res)=>{
         if(err)
         {
             res.json({
-                resultCode:100,
+                resultCode:505,
                 toggle:isMarked
             })
         }
@@ -1859,7 +1859,10 @@ app.post('/toggleFollow',verifyToken,(req,res)=>{
     jwt.verify(req.token,'secretkey',(err,authData)=>{
         if(err)
         {
-            console.log('인증failed')
+            res.json({
+                resultCode:505,
+                value:505
+            })
         }
         else
         {
@@ -1904,6 +1907,12 @@ app.post('/toggleLikeTag',verifyToken,(req,res)=>{
         if(err)
         {
             console.log('인증실패')
+            res.json({
+                resultCode:505,
+                tagname:tagname,
+                count:count,
+                isLiked:isLiked
+            })
         }
         else
         {
@@ -1933,6 +1942,7 @@ app.post('/toggleLikeTag',verifyToken,(req,res)=>{
                 else{
                  
                     res.json({
+                        resultCode:200,
                         tagname:tagname,
                         count:count,
                         isLiked:isLiked
@@ -1951,7 +1961,7 @@ app.post('/getFollowingPerson',verifyToken,(req,res)=>{
         if(err)
         {
             res.json({
-                resultCode:100,
+                resultCode:505,
                 persons:[]
             })
         }
@@ -2026,7 +2036,7 @@ app.post('/getSearchedFollowingPerson',verifyToken,(req,res)=>{
         if(err)
         {
             res.json({
-                resultCode:100,
+                resultCode:505,
                 persons:[]
             })
         }
@@ -2101,7 +2111,7 @@ app.post('/getSearchedPerson',verifyToken,(req,res)=>{
         if(err)
         {
             res.json({
-                resultCode:100,
+                resultCode:505,
                 persons:[]
             })
         }
@@ -2176,7 +2186,7 @@ app.post('/getPopularTag',verifyToken,(req,res)=>{
         if(err)
         {
             res.json({
-                resultCode:100,
+                resultCode:505,
                 posts:[]
             })
         }
@@ -2230,7 +2240,7 @@ app.post('/getpolloptions',verifyToken,(req,res)=>{
         if(err)
         {
             res.json({
-                resultCode:100,
+                resultCode:505,
                 tags:[]
             })
         }
@@ -2292,7 +2302,7 @@ app.post('/getFavoriteTag',verifyToken,(req,res)=>{
     if(err)
     {
         res.json({
-            resultCode:100,
+            resultCode:505,
             tags:[]
         })
 
@@ -2337,6 +2347,10 @@ app.post('/getTagLiked',verifyToken,(req,res)=>{
         if(err)
         {
            console.log('authError occured')
+           res.json({
+            resultCode:505,
+            value:1
+        })
         }
         else
         {
@@ -2354,12 +2368,14 @@ app.post('/getTagLiked',verifyToken,(req,res)=>{
                     if(result.length==0)
                     {
                         res.json({
+                            resultCode:200,
                             value:0
                         })
                     }
                     else
                     {
                         res.json({
+                            resultCode:200,
                             value:1
                         })
                     }
@@ -2377,7 +2393,7 @@ app.post('/getSearchedTag',verifyToken,(req,res)=>{
         if(err)
         {
             res.json({
-                resultCode:100,
+                resultCode:505,
                 tags:[]
             })
         }
@@ -2435,7 +2451,7 @@ app.post('/getHotPosts',verifyToken,(req,res)=>{
         if(err)
         {
             res.json({
-                resultCode:100,
+                resultCode:505,
                 posts:[]
             })
         }
@@ -2563,7 +2579,7 @@ var getmy='select *from user where platform=? and account=?'
         if(err)
         {
             res.json({
-                resultCode:100,
+                resultCode:505,
                 posts:[]
             })
         }
@@ -2671,6 +2687,11 @@ app.post('/getmyPosts',verifyToken,(req,res)=>{
         if(err)
         {
         console.log('인증오류발생')
+        res.json({
+            resultCode:505,
+            posts:result
+        
+        })
         }
         else
         {
@@ -2759,6 +2780,11 @@ app.post('/getBookmarkedPosts',verifyToken,(req,res)=>{
     if(err)
     {
     console.log('인증오류발생')
+    res.json({
+        resultCode:505,
+        posts:result
+    
+    })
     }
     else
     {
@@ -2885,7 +2911,7 @@ app.post('/getFollowingPosts',verifyToken,(req,res)=>{
         if(err)
         {
             res.json({
-                resultCode:100,
+                resultCode:505,
                 posts:[]
             })
         }
@@ -3006,7 +3032,7 @@ app.post('/getuserPosts',verifyToken,(req,res)=>{
         if(err)
         {
             res.json({
-                resultCode:100,
+                resultCode:505,
                 posts:[]
             })
         }
@@ -3126,7 +3152,7 @@ app.post('/getNewPosts',verifyToken,(req,res)=>{
         if(err)
         {
             res.json({
-                resultCode:100,
+                resultCode:505,
                 posts:[]
             })
         }
@@ -3247,7 +3273,7 @@ jwt.verify(req.token,'secretkey',(err,authData)=>{
     if(err)
     {
         res.json({
-            resultCode:100,
+            resultCode:505,
             posts:[]
         })
     }
@@ -3372,7 +3398,7 @@ app.post("/getNearPosts",verifyToken,(req,res)=>{
         if(err)
         {
             res.json({
-                resultCode:100,
+                resultCode:505,
                 posts:[] 
             })
         }
@@ -3596,6 +3622,10 @@ app.post('/blockcommentuser',verifyToken,(req,res)=>{
         if(err)
         {
             console.log('인증에러')
+            res.json({
+                resultCode:505,
+                value:505
+            })
         }
         else
         {
@@ -3669,6 +3699,10 @@ app.post('/getBlocks',verifyToken,(req,res)=>{
         if(err)
         {
         console.log('인증오류발생')
+        res.json({
+            resultCode:505,
+            blocks:[]
+        })
         }
         else
         {
@@ -3738,6 +3772,10 @@ app.post('/blockpostuser',verifyToken,(req,res)=>{
         {
         
             console.log('인증에러')
+            res.json({
+                resultCode:505,
+                value:500
+            })
         }
         else
         {
@@ -3801,6 +3839,10 @@ app.post('/blockchatuser',verifyToken,(req,res)=>{
         {
         
             console.log('인증에러')
+            res.json({
+                resultCode:505,
+                value:505
+            })
         }
         else
         {
@@ -3864,6 +3906,10 @@ app.post('/checkNotiUnread',verifyToken,(req,res)=>{
         if(err)
         {
         console.log('인증오류발생')
+        res.json({
+            resultCode:505,
+            value:505
+        })
         }
         else
         {
@@ -3908,8 +3954,8 @@ app.post('/togglechat',verifyToken,(req,res)=>{
     if(err)
     {
         res.json({
-            resultCode:400,
-            value:400
+            resultCode:505,
+            value:505
         })
     }
     else
@@ -3949,6 +3995,14 @@ app.post('/getmyprofile',verifyToken,(req,res)=>{
         if(err)
         {
             console.log('getmyprofile 인증 오류')
+            res.json({
+                resultCode:505,
+                platform:platform,
+                account:account,
+                profileimage:result[0].profileimage,
+                nickname:result[0].nickname,
+                gender:result[0].gender
+            })
         }
         else
         {
@@ -3983,8 +4037,8 @@ app.post('/getChatonoff',verifyToken,(req,res)=>{
     if(err)
     {
         res.json({
-            resultCode:400,
-            value:400
+            resultCode:505,
+            value:505
         })
     }
     else
@@ -4020,6 +4074,11 @@ app.post('/getNotis',verifyToken,(req,res)=>{
         if(err)
         {
         console.log('인증오류발생')
+        res.json({
+            resultCode:505,
+            notis:[]
+
+        })
         }
         else
         {
@@ -4076,6 +4135,10 @@ app.post('/togglecomment',verifyToken,(req,res)=>{
         if(err)
         {
             console.log('인증오류발생')
+            res.json({
+                resultCode:505,
+                value:0
+            })
         }
         else
         {
@@ -4227,6 +4290,10 @@ app.post('/report',(req,res)=>{
         if(err)
         {
         console.log('인증오류발생')
+        res.json({
+            resultCode:505,
+            value:505
+        })
         }
         else
         {
@@ -4277,8 +4344,8 @@ app.post('/getUserid',verifyToken,(req,res)=>{
         if(err)
         {
             res.json({
-                resultCode:400,
-                value:400
+                resultCode:505,
+                value:505
             })
         }
         else
@@ -4315,6 +4382,10 @@ app.post('/postReply',verifyToken,(req,res)=>{
         if(err)
         {
         console.log('인증오류발생')
+        res.json({
+            resultCode:505,
+            value:505
+        })
         }
         else
         {
@@ -4357,10 +4428,11 @@ app.post('/postReply',verifyToken,(req,res)=>{
                 }
                 else
                 {
-                    console.log('AA')
+                
                     if(result.length==0)
                     {
                         res.json({
+                            resultCode:100,
                             value:100
                         })
                     }
@@ -4383,6 +4455,7 @@ app.post('/postReply',verifyToken,(req,res)=>{
                                         if(blockpostresult.length!=0)
                                         {
                                             res.json({
+                                                resultCode:400,
                                               value:400  
                                             })
                                         }
@@ -4398,6 +4471,7 @@ app.post('/postReply',verifyToken,(req,res)=>{
                                                     if(blockcommentresult.length!=0)
                                                     {
                                                         res.json({
+                                                            resultCode:500,
                                                             value:500
                                                         })
                                                     }
@@ -4677,6 +4751,7 @@ app.post('/postReply',verifyToken,(req,res)=>{
                                             }
                                         }
                                         res.json({
+                                            resultCode:200,
                                             value:200
                                         })
                                         
@@ -4712,7 +4787,8 @@ app.post('/postComment',verifyToken,(req,res)=>{
         if(err)
         {
             res.json({
-                value:100
+                resultCode:505,
+                value:505
             })
         }
         else
@@ -4750,6 +4826,7 @@ app.post('/postComment',verifyToken,(req,res)=>{
                     if(result.length==0)
                     {
                         res.json({
+                            resultCode:100,
                             value:100
                         })
                     }
@@ -4771,6 +4848,7 @@ app.post('/postComment',verifyToken,(req,res)=>{
                                         if(blockresult.length!=0)
                                         {
                                             res.json({
+                                                resultCode:400,
                                                 value:400
                                             })
                                         }
@@ -4846,6 +4924,7 @@ app.post('/postComment',verifyToken,(req,res)=>{
                                                         })
                                                     }
                                                     res.json({
+                                                        resultCode:200,
                                                         value:200
                                                     })
                                                 }
@@ -4896,7 +4975,7 @@ app.post('/vote',verifyToken,(req,res)=>{
         if(err)
         {
             res.json({
-                resultCode:400,
+                resultCode:505,
                 votereesult:[]
             })
         }
@@ -4954,7 +5033,7 @@ app.post('/checkSelectedComment',verifyToken,(req,res)=>{
         if(err)
         {
             res.json({
-                resultCode:400,
+                resultCode:505,
                 comments:[]
             })
         }
@@ -5093,6 +5172,11 @@ app.post('/getReply',verifyToken,(req,res)=>{
         if(err)
         {
         console.log('인증오류발생')
+        
+        res.json({
+            resultCode:505,
+            comments:[]
+        })
         }
         else
         {
@@ -5175,7 +5259,7 @@ app.post('/getComment',verifyToken,(req,res)=>{
         if(err)
         {
             res.json({
-                resultCode:100,
+                resultCode:505,
                 comments:[]
             })
         }
@@ -5263,7 +5347,7 @@ app.post('/getHotComment',verifyToken,(req,res)=>{
         if(err)
         {
             res.json({
-                resultCode:100,
+                resultCode:505,
                 comments:[]
             })
         }
@@ -5350,6 +5434,10 @@ app.post('/readAllNoti',verifyToken,(req,res)=>{
         if(err)
         {
         console.log('인증오류발생')
+        res.json({
+            resultCode:505,
+            value:505
+        })
         }
         else
         {
@@ -5383,7 +5471,10 @@ app.post('/getchatrequests',verifyToken,(req,res)=>{
     jwt.verify(req.token,'secretkey',(err,authData)=>{
         if(err)
         {
-        
+            res.json({
+                resultCode:505,
+                requests:[]
+            })
         }
         else
         {
@@ -5441,6 +5532,10 @@ app.post('/requestchat',verifyToken,(req,res)=>{
         if(err)
         {
             console.log('인증실패')
+            res.json({
+                resultCode:505,
+                value:505
+            })
         }
         else
         {
@@ -5645,6 +5740,10 @@ app.post('/getChatprofiles',verifyToken,(req,res)=>{
     jwt.verify(req.token,'secretkey',(err,authData)=>{
         if(err)
         {
+            res.json({
+                resultCode:505,
+                profiles:[]
+            })
         }
         else{
             var platform=authData.user.platform
@@ -5812,6 +5911,10 @@ app.post('/deleteAllNoti',verifyToken,(req,res)=>{
         if(err)
         {
         console.log('인증오류발생')
+        res.json({
+            resultCode:505,
+            value:505
+        })
         }
         else
         {
@@ -5894,6 +5997,10 @@ app.post('/getSelectedPost',verifyToken,(req,res)=>{
                 jwt.verify(req.token,'secretkey',(err,authData)=>{
                     if(err)
                     {
+                        res.json({
+                            resultCode:505,
+                            posts:[]
+                        })
                     }
                     else
                     {
@@ -6004,6 +6111,10 @@ app.post("/getAnonymous",verifyToken,(req,res,next)=>{
         if(err)
         {
         console.log('인증오류발생')
+        res.json({
+            resultCode:505,
+            message:""
+        })
         }
         else
         {
@@ -6048,6 +6159,10 @@ app.post('/withdrawal',verifyToken,(req,res)=>{
         if(err)
         {
         console.log('인증오류발생')
+        res.json({
+            resultCode:505,
+            value:505
+        })
         }
         else
         {
@@ -6126,6 +6241,10 @@ app.post("/checkuser",verifyToken,(req,res)=>{
         if(err)
         {
         console.log('인증오류발생')
+        res.json({
+            resultCode:505,
+            value:userid
+        })
         }
         else
         {
