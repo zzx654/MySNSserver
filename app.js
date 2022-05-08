@@ -441,6 +441,7 @@ function sendEmail(toEmail, title, txt) {
         transporter.close()
     })
 }
+
 app.post('/changepassword',verifyToken,(req,res)=>{
 
     jwt.verify(req.token,'secretkey',(err,authData)=>{
@@ -1283,6 +1284,7 @@ app.post('/api/login',(req,res)=>{
             if(err)
             {
                 console.log(err)
+               
             }
             else{
                 if(result.length==0)
@@ -1298,9 +1300,12 @@ app.post('/api/login',(req,res)=>{
                         var resultcode=404
             
                         if(err){
-                            res.json({
-                                resultCode:505
+                            deleteToken(req.token,function(){
+                                res.json({
+                                    resultCode:505
+                                })
                             })
+                            
                         }else{
                             var checkProfile='select * from user where platform=? and account=?'
                             connection.query(checkProfile,[authData.user.platform,authData.user.account],function(err,result){
@@ -6473,6 +6478,19 @@ function verifyToken(req,res,next){
     }
 
 
+}
+function deleteToken(token,callback){
+    var deletetoken='update user set authtoken="",fcmtoken="" where authtoken=?'
+    connection.query(deletetoken,token,function(err,result){
+        if(err)
+        {
+            console.log(err)
+        }
+        else
+        {
+            callback()
+        }
+    })
 }
 function send_message(phone) {
     let number = Math.floor(Math.random() * 1000000)+100000; // ★★난수 발생 ★★★★★
