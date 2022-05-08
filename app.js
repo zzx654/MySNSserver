@@ -1306,13 +1306,14 @@ app.post('/api/login',(req,res)=>{
                         var resultcode=404
             
                         if(err){
+                            
+                            
+                        }else{
                             deleteToken(req.token,function(){
                                 res.json({
                                     resultCode:505
                                 })
                             })
-                            
-                        }else{
                             var checkProfile='select * from user where platform=? and account=?'
                             connection.query(checkProfile,[authData.user.platform,authData.user.account],function(err,result){
                                 if(err)
