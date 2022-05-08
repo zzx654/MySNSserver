@@ -1297,7 +1297,7 @@ app.post('/api/login',(req,res)=>{
                 {
                     console.log('토큰정보X')
                     res.json({
-                        resultCode:500
+                        resultCode:505
                     })
                 }
                 else{
