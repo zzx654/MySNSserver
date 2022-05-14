@@ -210,7 +210,7 @@ io.sockets.on('connection', (socket) => {
     const roomNumber = roomData.roomid
     const userid=roomData.myid
 
-    console.log('enter')
+
     socket.join(`${roomNumber}`)
 
 
