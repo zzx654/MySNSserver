@@ -203,7 +203,7 @@ app.post('/uploadprofileimg', verifyToken,upload.single('image'), (req, res) => 
 io.sockets.on('connection', (socket) => {
   console.log(`Socket connected : ${socket.id}`)
 
-  console.log('')
+
   socket.on('enter', (data) => {
     const roomData = JSON.parse(data)
 
