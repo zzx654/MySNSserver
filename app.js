@@ -203,6 +203,7 @@ app.post('/uploadprofileimg', verifyToken,upload.single('image'), (req, res) => 
 io.sockets.on('connection', (socket) => {
   console.log(`Socket connected : ${socket.id}`)
 
+  console.log('')
   socket.on('enter', (data) => {
     const roomData = JSON.parse(data)
 
@@ -221,6 +222,7 @@ io.sockets.on('connection', (socket) => {
     var userid=data.userid
     var param=[id,userid]
     var insertsocket='UPDATE user set socketid=? where userid=?'
+    console.log('')
     connection.query(insertsocket,param,function(err,result){
       if(err)
       {
