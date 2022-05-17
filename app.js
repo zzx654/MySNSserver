@@ -1742,11 +1742,15 @@ app.post('/toggleLikePost',verifyToken,(req,res)=>{
                                                     {
                                                     
                                                     
-                                                                const leftData = {
-                                                                    type : "notireceive"
-                                                                     
+                                                                const notiData = {
+                                                                    notiid : result.insertId,
+                                                                    type:2,
+                                                                    text:'누군가 당신의 글을 좋아합니다',
+                                                                    date:date,
+                                                                    postid:postid,
+                                                                    isread:0
                                                                   }
-                                                                io.to(userresult[0].socketid).emit('updatenoti',JSON.stringify(leftData))
+                                                                io.to(userresult[0].socketid).emit('updatenoti',JSON.stringify(notiData))
                                                        
                                                         var payload={
                                                             data:{
@@ -4310,11 +4314,22 @@ app.post('/togglecomment',verifyToken,(req,res)=>{
                                                 }
                                                 else
                                                 {
-                                                    const leftData = {
-                                                        type : "notireceive"
-                                                         
+                                                 
+                                                    var comid=''
+                                                    if(type==4)
+                                                        comid=rootcommentid
+                                                    else
+                                                        comid=null
+                                                    const notiData = {
+                                                        notiid : result.insertId,
+                                                        type:type,
+                                                        text:message,
+                                                        date:time,
+                                                        postid:postid,
+                                                        commentid:comid,
+                                                        isread:0
                                                       }
-                                                    io.to(userresult[0].socketid).emit('updatenoti',JSON.stringify(leftData))
+                                                    io.to(userresult[0].socketid).emit('updatenoti',JSON.stringify(notiData))
                                                     var payload={
                                                         data:{
                                                             title:'고민나눔',
@@ -4602,9 +4617,14 @@ app.post('/postReply',verifyToken,(req,res)=>{
                                                             else
                                                             {
                                                               
-                                                                        const notiData={
-                                                                            type:"notireceive"
-                                                                        }
+                                                                const notiData = {
+                                                                    notiid : result.insertId,
+                                                                    type:1,
+                                                                    text:message,
+                                                                    date:time,
+                                                                    postid:postid,
+                                                                    isread:0
+                                                                  }
                                                                         io.to(userresult[0].socketid).emit('updatenoti',JSON.stringify(notiData))
                                                                         var payload={
                                                                             data:{
@@ -4653,9 +4673,16 @@ app.post('/postReply',verifyToken,(req,res)=>{
                                                             }
                                                             else
                                                             {
-                                                                const notiData={
-                                                                    type:"notireceive"
-                                                                }
+                                                               
+                                                                const notiData = {
+                                                                    notiid : result.insertId,
+                                                                    type:5,
+                                                                    text:message,
+                                                                    date:time,
+                                                                    postid:postid,
+                                                                    commentid:commentid,
+                                                                    isread:0
+                                                                  }
                                                                 io.to(userresult[0].socketid).emit('updatenoti',JSON.stringify(notiData))
                                                                 var payload={
                                                                     data:{
@@ -4705,9 +4732,16 @@ app.post('/postReply',verifyToken,(req,res)=>{
                                                                 }
                                                                 else
                                                                 {
-                                                                    const notiData={
-                                                                        type:"notireceive"
-                                                                    }
+                                                                    
+                                                                const notiData = {
+                                                                    notiid : result.insertId,
+                                                                    type:5,
+                                                                    text:message,
+                                                                    date:time,
+                                                                    postid:postid,
+                                                                    commentid:commentid,
+                                                                    isread:0
+                                                                  }
                                                                     io.to(userresult[0].socketid).emit('updatenoti',JSON.stringify(notiData))
         
                                                                     var payload={
@@ -4755,9 +4789,16 @@ app.post('/postReply',verifyToken,(req,res)=>{
                                                                 }
                                                                 else
                                                                 {
-                                                                    const notiData={
-                                                                        type:"notireceive"
-                                                                    }
+                                                                    
+                                                                const notiData = {
+                                                                    notiid : result.insertId,
+                                                                    type:5,
+                                                                    text:message,
+                                                                    date:time,
+                                                                    postid:postid,
+                                                                    commentid:commentid,
+                                                                    isread:0
+                                                                  }
                                                                     io.to(userresult[0].socketid).emit('updatenoti',JSON.stringify(notiData))
                                                                     var payload={
                                                                         data:{
@@ -4803,9 +4844,15 @@ app.post('/postReply',verifyToken,(req,res)=>{
                                                                 }
                                                                 else
                                                                 {
-                                                                    const notiData={
-                                                                        type:"notireceive"
-                                                                    }
+                                                                    
+                                                                const notiData = {
+                                                                    notiid : result.insertId,
+                                                                    type:1,
+                                                                    text:message,
+                                                                    date:time,
+                                                                    postid:postid,
+                                                                    isread:0
+                                                                  }
                                                                     io.to(userresult[0].socketid).emit('updatenoti',JSON.stringify(notiData))
                                                                     var payload={
                                                                         data:{
@@ -4977,9 +5024,14 @@ app.post('/postComment',verifyToken,(req,res)=>{
                                                                     }
                                                                     else
                                                                     {
-                                                                        const notiData={
-                                                                            type:"notireceive"
-                                                                        }
+                                                                        const notiData = {
+                                                                            notiid : result.insertId,
+                                                                            type:1,
+                                                                            text:message,
+                                                                            date:time,
+                                                                            postid:postid,                                 
+                                                                            isread:0
+                                                                          }
                                                                         io.to(userresult[0].socketid).emit('updatenoti',JSON.stringify(notiData))
                                                                         var payload={
                                                                             data:{
