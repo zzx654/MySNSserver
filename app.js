@@ -1740,21 +1740,14 @@ app.post('/toggleLikePost',verifyToken,(req,res)=>{
                                                     }
                                                     else
                                                     {
-                                                        param=[userresult[0].platform,userresult[0].account]
-                                                        connection.query(getnoti,param,function(err,result){
-                                                            if(err)
-                                                            {
-                                                                console.log(err)
-                                                            }
-                                                            else
-                                                            {
+                                                    
+                                                    
                                                                 const leftData = {
                                                                     type : "notireceive"
                                                                      
                                                                   }
                                                                 io.to(userresult[0].socketid).emit('updatenoti',JSON.stringify(leftData))
-                                                            }
-                                                        })
+                                                       
                                                         var payload={
                                                             data:{
                                                                 title:'고민나눔',
@@ -5938,9 +5931,9 @@ app.post('/acceptchat',(req,res)=>{
                                   
                                     var sendcontent={
                                         dateChanged:0,
-                                        profileimage:userresult[0].profileimage,
-                                        nickname:userresult[0].nickname,
-                                        gender:userresult[0].gender,
+                                        profileimage:myresult[0].profileimage,
+                                        nickname:myresult[0].nickname,
+                                        gender:myresult[0].gender,
                                         senderid:participant,
                                         roomid:roomid,
                                         date:time,
