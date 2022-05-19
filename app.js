@@ -859,6 +859,11 @@ app.post('/editprofile',verifyToken,(req,res)=>{
         query='update user set nickname=?,profileimage=NULL where platform=? and account=?'
         param=[nickname,platform,account]
     }
+    else if(imageuri=='notchanged')
+    {
+        query='update user set nickname=? where platform=? and account=?'
+        param=[nickname,platform,account]
+    }
     else
     {
         query='update user set nickname=?,profileimage=? where platform=? and account=?'
