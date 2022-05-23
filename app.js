@@ -4600,9 +4600,9 @@ app.post('/postReply',verifyToken,(req,res)=>{
                                     else
                                     {
                                         if(myresult[0].userid==commentuserid)
-                                        {
+                                        {//내가쓴 댓글
                                             if(commentuserid!=postuserid)
-                                            {
+                                            {//다른사람이 쓴글에서 내가쓴댓글에 달 답글인경우
                                                 connection.query(getuser,postuserid,function(err,userresult){
                                                     if(err)
                                                     {
@@ -4613,8 +4613,8 @@ app.post('/postReply',verifyToken,(req,res)=>{
                                                         
                                                         message='누군가 당신의 게시물에 댓글을 달았습니다\n'+'"'+textsummary+'"'
                                                         type='comment'
-                                                        param=[userresult[0].platform,userresult[0].account,time,1,message,postid]
-                                                        connection.query(insertcommentnoti,param,function(err,result){
+                                                        param=[userresult[0].platform,userresult[0].account,time,5,message,postid,commentid]
+                                                        connection.query(insertreplynoti,param,function(err,result){
                                                             if(err)
                                                             {
                                                                 console.log(err)
@@ -4624,10 +4624,11 @@ app.post('/postReply',verifyToken,(req,res)=>{
                                                               
                                                                 const notiData = {
                                                                     notiid : result.insertId,
-                                                                    type:1,
+                                                                    type:5,
                                                                     text:message,
                                                                     date:time,
                                                                     postid:postid,
+                                                                    commentid:commentid,
                                                                     isread:0
                                                                   }
                                                                         io.to(userresult[0].socketid).emit('updatenoti',JSON.stringify(notiData))
@@ -4660,7 +4661,7 @@ app.post('/postReply',verifyToken,(req,res)=>{
                                         else
                                         {
                                             if(myresult[0].userid==postuserid)
-                                            {
+                                            {//내가쓴댓글이 아니지만 내가쓴글에서 답글을달경우
                                                 connection.query(getuser,commentuserid,function(err,userresult){
                                                     if(err)
                                                     {
@@ -4716,8 +4717,10 @@ app.post('/postReply',verifyToken,(req,res)=>{
                                             }
                                             else
                                             {
+                                                //내가쓴댓글도아니고 내가쓴글도아닐때
                                                 if(commentuserid==postuserid)
                                                 {
+                                                    //댓글쓴사람이 게시물작성자일떄
                                                     connection.query(getuser,postuserid,function(err,userresult){
                                                         if(err)
                                                         {
@@ -4841,7 +4844,7 @@ app.post('/postReply',verifyToken,(req,res)=>{
                                                             userfcmtoken=userresult[0].fcmtoken
                                                             message='누군가 당신의 게시물에 댓글을 달았습니다\n'+'"'+textsummary+'"'
                                                             type='comment'
-                                                            param=[userresult[0].platform,userresult[0].account,time,1,message,postid]
+                                                            param=[userresult[0].platform,userresult[0].account,time,5,message,postid,commentid]
                                                             connection.query(insertcommentnoti,param,function(err,result){
                                                                 if(err)
                                                                 {
@@ -4852,10 +4855,11 @@ app.post('/postReply',verifyToken,(req,res)=>{
                                                                     
                                                                 const notiData = {
                                                                     notiid : result.insertId,
-                                                                    type:1,
+                                                                    type:5,
                                                                     text:message,
                                                                     date:time,
                                                                     postid:postid,
+                                                                    commentid:commentid,
                                                                     isread:0
                                                                   }
                                                                     io.to(userresult[0].socketid).emit('updatenoti',JSON.stringify(notiData))
