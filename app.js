@@ -5300,7 +5300,7 @@ app.post('/checkSelectedComment',verifyToken,(req,res)=>{
                                                     else
                                                     {
                                                         res.json({
-                                                            resultCode:100,]
+                                                            resultCode:100,
                                                             comments:[]
                                                         })
                                                     }
