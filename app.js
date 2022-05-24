@@ -5228,7 +5228,6 @@ app.post('/checkSelectedComment',verifyToken,(req,res)=>{
                         }
                         else
                         {
-                            console.log('AAAAAAAAAAAAAAAAAAAA')
                             if(postresult.length!=0)
                             {
                                 
@@ -5253,15 +5252,12 @@ app.post('/checkSelectedComment',verifyToken,(req,res)=>{
                                             connection.query(commentquery,commentid,function(err,commentresult){
                                                 if(err)
                                                 {
-                                                    console.log('AAAAAAAAAAAAAAAAA')
                                                     console.log(err)
                                                 }
                                                 else
                                                 {
-                                                    console.log('BBBBBBBBBBBBBBBBBBBBB')
                                                     if(commentresult.length!=0)
                                                     {
-                                                        console.log('CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC')
                                 
                                                         connection.query(blockquery,[myresult[0].userid,commentresult[0].userid,commentresult[0].userid,myresult[0].userid],function(err,commentblockresult){
                                                             if(err)
@@ -5281,7 +5277,6 @@ app.post('/checkSelectedComment',verifyToken,(req,res)=>{
                                                                     connection.query(query,param,function(err,result){
                                                                         if(err)
                                                                         {
-                                                                            console.log('CCCCCCCCCCCCCCCCCCCCC')
                                                                             console.log(err)
                                                                         }
                                                                         else
@@ -5321,7 +5316,10 @@ app.post('/checkSelectedComment',verifyToken,(req,res)=>{
                                 })
                             }
                             else{
-                                console.log('이건 노이해인데')
+                                res.json({
+                                    resultCode:100,
+                                    comments:[]
+                                })
                             }
                           
                         }
