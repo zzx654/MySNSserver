@@ -5228,7 +5228,7 @@ app.post('/checkSelectedComment',verifyToken,(req,res)=>{
                         }
                         else
                         {
-                            if(postresult[0].length!=0)
+                            if(postresult.length!=0)
                             {
                                 connection.query(blockquery,[myresult[0].userid,postresult[0].userid,postresult[0].userid,myresult[0].userid],function(err,postblockresult){
                                     if(err)
@@ -5253,12 +5253,12 @@ app.post('/checkSelectedComment',verifyToken,(req,res)=>{
                                                 }
                                                 else
                                                 {
-                                                    if(commentresult[0].length!=0)
+                                                    if(commentresult.length!=0)
                                                     {
                                                         connection.query(blockquery,[myresult[0].userid,commentresult[0].userid,commentresult[0].userid,myresult[0].userid],function(err,commentblockresult){
                                                             if(err)
                                                             {
-                                                                console,log(err)
+                                                                console.log(err)
                                                             }
                                                             else
                                                             {
