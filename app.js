@@ -2298,8 +2298,8 @@ app.post('/getpolloptions',verifyToken,(req,res)=>{
                     console.log('getmy err')
                 }
                 else{
-                    var checkpolled='select *from vote where userid=?'
-                    connection.query(checkpolled,myresult[0].userid,function(err,result){
+                    var checkpolled='select *from vote where userid=? and postid=?'
+                    connection.query(checkpolled,[myresult[0].userid,postid],function(err,result){
                         if(err)
                         {
                             console.log('checkpolled err')
