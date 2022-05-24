@@ -5228,6 +5228,7 @@ app.post('/checkSelectedComment',verifyToken,(req,res)=>{
                         }
                         else
                         {
+                            console.log('AAAAAAAAAAAAAAAAAAAA')
                             if(postresult.length!=0)
                             {
                                 connection.query(blockquery,[myresult[0].userid,postresult[0].userid,postresult[0].userid,myresult[0].userid],function(err,postblockresult){
