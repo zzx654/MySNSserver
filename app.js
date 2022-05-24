@@ -5320,6 +5320,9 @@ app.post('/checkSelectedComment',verifyToken,(req,res)=>{
                                     }
                                 })
                             }
+                            else{
+                                console.log('이건 노이해인데')
+                            }
                           
                         }
                     })
