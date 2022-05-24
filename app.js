@@ -5231,14 +5231,16 @@ app.post('/checkSelectedComment',verifyToken,(req,res)=>{
                             
                             if(postresult.length!=0)
                             {
+                                console.log('AAAAAAAAAAAAAAAAAAAA')
                                 connection.query(blockquery,[myresult[0].userid,postresult[0].userid,postresult[0].userid,myresult[0].userid],function(err,postblockresult){
                                     if(err)
                                     {
+                                        
                                         console.log(err)
                                     }
                                     else
                                     {
-                                        console.log('AAAAAAAAAAAAAAAAAAAA')
+                                        
                                         if(postblockresult.length!=0)
                                         {
                                              res.json({
