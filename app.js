@@ -5255,6 +5255,7 @@ app.post('/checkSelectedComment',verifyToken,(req,res)=>{
                                                 {
                                                     if(commentresult.length!=0)
                                                     {
+                                                        console.log('여기에 온다면 진짜 말안되는것')
                                                         connection.query(blockquery,[myresult[0].userid,commentresult[0].userid,commentresult[0].userid,myresult[0].userid],function(err,commentblockresult){
                                                             if(err)
                                                             {
