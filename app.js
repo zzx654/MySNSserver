@@ -2237,7 +2237,7 @@ app.post('/getPopularTag',verifyToken,(req,res)=>{
             var param=[platform,account]
             var sql="select toptags.tagname,toptags.count,if(isnull(mytags.account),0,1) as isLiked from (select tagname,count(*) as count "+
             "from posttag group by tagname having count>0 ) toptags left outer join (select *from favoritetags where platform=? and account=?) "+
-            "mytags on toptags.tagname=mytags.tagname order by count desc"
+            "mytags on toptags.tagname=mytags.tagname order by count desc limit 10"
             connection.query(sql,param,function(err,result){
                 if(err)
                 {
