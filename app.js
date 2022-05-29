@@ -4176,12 +4176,12 @@ app.post('/getNotis',verifyToken,(req,res)=>{
             if(notiid==undefined)
             {
                 param=[platform,account]
-                query='select *from noti where platform=? and account=? order by date desc,notiid desc limit 15 '
+                query='select *from noti where platform=? and account=? order by date desc,notiid desc limit 20 '
             }
             else
             {
                 param=[platform,account,date,date,notiid]
-                query='select *from (select *from noti where platform=? and account=?)notis where(date<? or (date=? and notiid<?)) order by date desc,notiid desc limit 12 '
+                query='select *from (select *from noti where platform=? and account=?)notis where(date<? or (date=? and notiid<?)) order by date desc,notiid desc limit 20 '
             }
             connection.query(query,param,function(err,result){
                 if(err)
