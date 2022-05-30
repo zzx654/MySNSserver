@@ -6035,13 +6035,17 @@ app.post('/acceptchat',(req,res)=>{
                                                         token:userresult[0].fcmtoken
                                                     
                                                     }
-                                                    admin.messaging().send(payload)
-                                                    .then(function(response){
-                                                        console.log("Succesfully send message",response)
-                                                    })
-                                                    .catch(function(error){
-                                                        console.log("Error sending message",error)
-                                                    })
+                                                    if(userresult[0].fcmtoken!="")
+                                                    {
+                                                        admin.messaging().send(payload)
+                                                        .then(function(response){
+                                                            console.log("Succesfully send message",response)
+                                                        })
+                                                        .catch(function(error){
+                                                            console.log("Error sending message",error)
+                                                        })
+                                                    }
+                                                   
     
                                                 connection.query(getchatrequests,['none',participant,0],function(err,result){
                                                     if(err)
