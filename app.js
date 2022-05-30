@@ -2663,7 +2663,7 @@ var getmy='select *from user where platform=? and account=?'
                 else
                 {
          param=[posthot,posthot,postnum,myresult[0].userid,myresult[0].userid,tagname]
-                    query="select *from(select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tagspost.date,post.image,"
+                    query="select *from(select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
                     +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
                     +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
                     " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
