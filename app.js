@@ -4889,10 +4889,33 @@ app.post('/postReply',verifyToken,(req,res)=>{
                                                 }
                                             }
                                         }
-                                        res.json({
-                                            resultCode:200,
-                                            value:200
+                                           
+
+                var getcomment="select com.commentid,com.postid,com.userid,com.text,com.ref,com.time,com.depth,com.platform,com.account,com.anonymous,getuser.nickname,getuser.profileimage,com.age,com.gender,"+
+                "ifnull(lik.likecount,0) as likecount,if(isnull(mylik.account),0,1)"+
+                " as commentliked from (select *from comment where commentid=?) com "+
+                " left outer join(select commentid,count(*) as likecount from "+
+                " likecomment group by commentid) lik on com.commentid=lik.commentid left outer join (select commentid,platform,account from likecomment"+
+                " where platform=? and account=?) mylik on com.commentid=mylik.commentid"+
+                " left outer join (select userid as id,nickname,profileimage from user) getuser on com.userid=getuser.id"
+                                        
+                                    
+                                        connection.query(getcomment,[result.insertId,platform,account],function(err,getresult){
+                                            if(err)
+                                            {
+                                                res.json({
+                                                    resultCode:400,
+                                                    comments:[]
+                                                })
+                                            }
+                                            else{
+                                                res.json({
+                                                    resultCode:200,
+                                                    comments:getresult
+                                                })
+                                            }
                                         })
+                                      
                                         
                                     }
                                 })
@@ -4968,7 +4991,7 @@ app.post('/postComment',verifyToken,(req,res)=>{
                     {
                         res.json({
                             resultCode:100,
-                            value:100
+                            comments:[]
                         })
                     }
                     else
@@ -4990,7 +5013,7 @@ app.post('/postComment',verifyToken,(req,res)=>{
                                         {
                                             res.json({
                                                 resultCode:400,
-                                                value:400
+                                                comments:[]
                                             })
                                         }
                                         else
@@ -5069,10 +5092,32 @@ app.post('/postComment',verifyToken,(req,res)=>{
                                                             }
                                                         })
                                                     }
-                                                    res.json({
-                                                        resultCode:200,
-                                                        value:200
+                                                
+                                                    var getcomment="select com.commentid,com.postid,com.userid,com.text,com.ref,com.time,com.depth,com.platform,com.account,com.anonymous,getuser.nickname,getuser.profileimage,com.age,com.gender,"+
+                                                    "ifnull(reply.replycount,0) as replycount,ifnull(lik.likecount,0) as likecount,if(isnull(mylik.account),0,1)"+
+                                                    " as commentliked from (select *from comment where commentid=?) com left outer join (select ref,count(*) as replycount from comment where"+
+                                                    " depth=1 and postid=? group by ref) reply on com.ref=reply.ref left outer join(select commentid,count(*) as likecount from "+
+                                                    " likecomment group by commentid) lik on com.commentid=lik.commentid left outer join (select commentid,platform,account from likecomment"+
+                                                    " where platform=? and account=?) mylik on com.commentid=mylik.commentid"+
+                                                    " left outer join (select userid as id,nickname,profileimage from user) getuser on com.userid=getuser.id"
+                                                    
+                                                
+                                                    connection.query(getcomment,[result.insertId,postid,platform,account],function(err,getresult){
+                                                        if(err)
+                                                        {
+                                                            res.json({
+                                                                resultCode:400,
+                                                                comments:[]
+                                                            })
+                                                        }
+                                                        else{
+                                                            res.json({
+                                                                resultCode:200,
+                                                                comments:getresult
+                                                            })
+                                                        }
                                                     })
+                                                
                                                 }
                                             })
                                         }
