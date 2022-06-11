@@ -5383,7 +5383,7 @@ app.post('/getReply',verifyToken,(req,res)=>{
     jwt.verify(req.token,'secretkey',(err,authData)=>{
         if(err)
         {
-        console.log('인증오류발생')
+        console.log('인증오류')
         deleteToken(req.token,function(){
         res.json({
             resultCode:505,
