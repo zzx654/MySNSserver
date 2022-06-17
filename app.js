@@ -4478,6 +4478,70 @@ app.post('/getUserid',verifyToken,(req,res)=>{
  })
   
 })
+app.post('/getHotUsers',verifyToken,(req,res)=>{
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+        {
+            console.log('인증오류발생')
+            deleteToken(req.token,function(){
+                res.json({
+                resultCode:505,
+                value:505
+                 })
+            })
+        }
+        else{
+            var platform=authData.user.platform
+            var account=authData.user.account
+                var gethotuser=''
+                var getmy='select *from user where platform=? and account=?'
+               
+                
+                connection.query(getmy,[platform,account],function(err,myresult){
+                    if(err)
+                    {
+                        console.log(err)
+                    }
+                    else{
+                        var gethotuser="select *from(select user.userid,nickname,gender,if(isnull(profileimage),?,profileimage) as profileimage,if(isnull(myfollow.account),0,1) as following,if(isnull(followcount.followingcount),0,followcount.followingcount) as followingcount from"+
+                        " user left outer join (select *from follow where platform=? and account=?) myfollow on user.userid=myfollow.userid"+
+                        " left outer join (select userid,count(*) as followingcount from follow group by userid) followcount on user.userid=followcount.userid)topuser"+
+                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) order by followingcount desc,userid desc limit 20"
+                        var myparam=['none',platform,account,myresult[0].userid,myresult[0].userid]
+                        connection.query(gethotuser,myparam,function(err,result){
+                            if(err)
+                            {
+                                console.log(err)
+                                res.json({
+                                    resultCode:400,
+                                    persons:[]
+                                })
+                            }
+                            else{
+                                if(result.length==0)
+                                {
+                                    res.json({
+                                        resultCode:100,
+                                        persons:[]
+                                    })
+                                }
+                                else{
+                                    res.json({
+                                        resultCode:200,
+                                        persons:result
+                                    })
+                                }
+                                
+                            }
+                        })
+
+
+                    }
+                })
+       
+        }
+    })
+})
 app.post('/postReply',verifyToken,(req,res)=>{
     jwt.verify(req.token,'secretkey',(err,authData)=>{
         if(err)
