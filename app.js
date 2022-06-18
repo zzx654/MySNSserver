@@ -4514,14 +4514,14 @@ app.post('/getHotUsers',verifyToken,(req,res)=>{
                             gethotuser="select *from(select user.userid,nickname,gender,if(isnull(profileimage),?,profileimage) as profileimage,if(isnull(myfollow.account),0,1) as following,if(isnull(followcount.followingcount),0,followcount.followingcount) as followingcount from"+
                             " user left outer join (select *from follow where platform=? and account=?) myfollow on user.userid=myfollow.userid"+
                             " left outer join (select userid,count(*) as followingcount from follow group by userid) followcount on user.userid=followcount.userid)topuser"+
-                            " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) order by followingcount desc,userid desc limit 20"
+                            " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and nickname!=null order by followingcount desc,userid desc limit 20"
                         }
                         else{
                             myparam=['none',platform,account,myresult[0].userid,myresult[0].userid,lastuserfollow,lastuserfollow,lastuserid]
                             gethotuser="select *from(select user.userid,nickname,gender,if(isnull(profileimage),?,profileimage) as profileimage,if(isnull(myfollow.account),0,1) as following,if(isnull(followcount.followingcount),0,followcount.followingcount) as followingcount from"+
                             " user left outer join (select *from follow where platform=? and account=?) myfollow on user.userid=myfollow.userid"+
                             " left outer join (select userid,count(*) as followingcount from follow group by userid) followcount on user.userid=followcount.userid)topuser"+
-                            " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and (followingcount<? or (followingcount=? and userid<?)) order by followingcount desc,userid desc limit 20"
+                            " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and (followingcount<? or (followingcount=? and userid<?)) and nickname!=null order by followingcount desc,userid desc limit 20"
                         }
                     
             
