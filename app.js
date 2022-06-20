@@ -6762,7 +6762,7 @@ app.post("/getuserprofile",(req,res)=>{
     " (select *from user where userid=?)user"+
     " left outer join (select userid,count(*) as followingcount from follow group by userid) followcount on user.userid=followcount.userid)selecteduser"
     
-    connection.query(query,['NONE',userid],function(err,result){
+    connection.query(query,userid,function(err,result){
         if(err)
         {
             console.log(err)
