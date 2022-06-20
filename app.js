@@ -6758,23 +6758,39 @@ app.post("/checkuser",verifyToken,(req,res)=>{
 })
 app.post("/getuserprofile",(req,res)=>{
     var userid=req.body.userid
-    var query='select *from user where userid=?'
-    connection.query(query,userid,function(err,result){
+    var query="select *from(select user.userid,age,nickname,gender,profileimage,if(isnull(myfollow.account),0,1) as following,if(isnull(followcount.followingcount),0,followcount.followingcount) as followingcount from"+
+    " (select *from user where userid=?)user"+
+    " left outer join (select userid,count(*) as followingcount from follow group by userid) followcount on user.userid=followcount.userid)selecteduser"
+    
+    connection.query(query,['NONE',userid],function(err,result){
         if(err)
         {
             console.log(err)
         }
         else
-        {   
-            res.json({
-                resultCode:200,
-                platform:result[0].platform,
-                account:result[0].account,
-                profileimage:result[0].profileimage,
-                nickname:result[0].nickname,
-                gender:result[0].gender,
-                age:result[0].age
-            })
+        { 
+            if(result.length==0)
+            {
+                res.json({
+                    resultCode:400,
+                    profileimage:'',
+                    nickname:'',
+                    gender:'',
+                    followingcount:0,
+                    age:0
+                })
+            }
+            else{
+                res.json({
+                    resultCode:200,
+                    profileimage:result[0].profileimage,
+                    nickname:result[0].nickname,
+                    gender:result[0].gender,
+                    followingcount:result[0].followingcount,
+                    age:result[0].age
+                })
+            }  
+          
 
         }
     })
