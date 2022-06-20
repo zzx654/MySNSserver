@@ -90,6 +90,7 @@ const admin=require("firebase-admin")
 
 
 const { rejects } = require('assert');
+const { connect } = require('http2');
 
 admin.initializeApp({ credential: admin.credential.cert({
     "projectId":process.env.FIREBASE_PROJECT_ID,
@@ -4238,21 +4239,54 @@ app.post('/getmyprofile',verifyToken,(req,res)=>{
             var platform=authData.user.platform
             var account=authData.user.account
             var getmy='select *from user where platform=? and account=?'
-            connection.query(getmy,[platform,account],function(err,result){
+            connection.query(getmy,[platform,account],function(err,myresult){
                 if(err)
                 {
                     console.log(err)
                 }
                 else
                 {
-                    res.json({
-                        resultCode:200,
-                        platform:platform,
-                        account:account,
-                        profileimage:result[0].profileimage,
-                        nickname:result[0].nickname,
-                        gender:result[0].gender
+                    var query="select *from(select user.userid,age,nickname,gender,profileimage,if(isnull(follower.followercount),0,follower.followercount) as followercount,if(isnull(following.followingcount),0,following.followingcount) as followingcount from"+
+                                " user"+
+                                " left outer join (select userid,count(*) as followercount from follow group by userid) follower on user.userid=follower.userid"+
+                                " left outer join(select follower,count(*) as followingcount from follow group by follower) following on user.userid=following.follower"+
+                                ")selecteduser where userid=?"
+                    var userid=myresult[0].userid
+                    connection.query(query,userid,function(err,result){
+                        if(err)
+                        {
+                            console.log(err)
+                        }
+                        else
+                        { 
+                            if(result.length==0)
+                            {
+                                    res.json({
+                                    resultCode:400,
+                                    profileimage:'',
+                                    nickname:'',
+                                    gender:'',
+                                    followercount:0,
+                                    followingcount:0,
+                                    age:0
+                                    })
+                            }
+                         else{
+                                res.json({
+                                    resultCode:200,
+                                    profileimage:result[0].profileimage,
+                                    nickname:result[0].nickname,
+                                    gender:result[0].gender,
+                                    followercount:result[0].followercount,
+                                    followingcount:result[0].followingcount,
+                                    age:result[0].age
+                                })
+                            }  
+          
+
+                        }
                     })
+                  
                 }
             })
         }
@@ -6775,9 +6809,11 @@ app.post("/checkuser",verifyToken,(req,res)=>{
 })
 app.post("/getuserprofile",(req,res)=>{
     var userid=req.body.userid
-    var query="select *from(select user.userid,age,nickname,gender,profileimage,if(isnull(followcount.followingcount),0,followcount.followingcount) as followingcount from"+
+    var query="select *from(select user.userid,age,nickname,gender,profileimage,if(isnull(follower.followercount),0,follower.followercount) as followercount,if(isnull(following.followingcount),0,following.followingcount) as followingcount from"+
     " user"+
-    " left outer join (select userid,count(*) as followingcount from follow group by userid) followcount on user.userid=followcount.userid)selecteduser where userid=?"
+    " left outer join (select userid,count(*) as followercount from follow group by userid) follower on user.userid=follower.userid"+
+    " left outer join(select follower,count(*) as followingcount from follow group by follower) following on user.userid=following.follower"+
+    ")selecteduser where userid=?"
     
     connection.query(query,userid,function(err,result){
         if(err)
@@ -6793,6 +6829,7 @@ app.post("/getuserprofile",(req,res)=>{
                     profileimage:'',
                     nickname:'',
                     gender:'',
+                    followercount:0,
                     followingcount:0,
                     age:0
                 })
@@ -6803,6 +6840,7 @@ app.post("/getuserprofile",(req,res)=>{
                     profileimage:result[0].profileimage,
                     nickname:result[0].nickname,
                     gender:result[0].gender,
+                    followercount:result[0].followercount,
                     followingcount:result[0].followingcount,
                     age:result[0].age
                 })
