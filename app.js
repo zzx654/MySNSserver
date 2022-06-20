@@ -6758,7 +6758,7 @@ app.post("/checkuser",verifyToken,(req,res)=>{
 })
 app.post("/getuserprofile",(req,res)=>{
     var userid=req.body.userid
-    var query="select *from(select user.userid,age,nickname,gender,profileimage,if(isnull(myfollow.account),0,1) as following,if(isnull(followcount.followingcount),0,followcount.followingcount) as followingcount from"+
+    var query="select *from(select user.userid,age,nickname,gender,profileimage,if(isnull(followcount.followingcount),0,followcount.followingcount) as followingcount from"+
     " user"+
     " left outer join (select userid,count(*) as followingcount from follow group by userid) followcount on user.userid=followcount.userid)selecteduser where userid=?"
     
