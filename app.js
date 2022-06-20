@@ -2029,15 +2029,15 @@ app.post('/getFollowingPerson',verifyToken,(req,res)=>{
                         sql="select *from(select user.userid,nickname,gender,if(isnull(profileimage),?,profileimage) as profileimage,if(isnull(myfollow.follower),0,1) as following,if(isnull(followcount.followingcount),0,followcount.followingcount) as followingcount from"+
                         " user left outer join (select *from follow where follower=?) myfollow on user.userid=myfollow.userid"+
                         " left outer join (select userid,count(*) as followingcount from follow group by userid) followcount on user.userid=followcount.userid)searcheduser"+
-                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid in (select userid from follow where platform=? and account=?) order by userid desc limit 20"
-                        param=['none',myresult[0].userid,myresult[0].userid,myresult[0].userid,platform,account]
+                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid in (select userid from follow where follower=?) order by userid desc limit 20"
+                        param=['none',myresult[0].userid,myresult[0].userid,myresult[0].userid,myresult[0].userid]
                     }
                     else{
                         sql="select *from(select user.userid,nickname,gender,if(isnull(user.profileimage),?,user.profileimage) as profileimage,if(isnull(myfollow.follower),0,1) as following,if(isnull(followcount.followingcount),0,followcount.followingcount) as followingcount from"+
                         " user left outer join (select *from follow where follower=?) myfollow on user.userid=myfollow.userid"+
                         " left outer join (select userid,count(*) as followingcount from follow group by userid) followcount on user.userid=followcount.userid)searcheduser"+
-                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?)  and userid in (select userid from follow where platform=? and account=?) and userid<?  order by userid desc limit 20"
-                        param=['none',myresult[0].userid,myresult[0].userid,myresult[0].userid,platform,account,myresult[0].userid]
+                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?)  and userid in (select userid from follow where follower=?) and userid<?  order by userid desc limit 20"
+                        param=['none',myresult[0].userid,myresult[0].userid,myresult[0].userid,platform,account,myresult[0].userid,myresult[0].userid]
                     }
                     connection.query(sql,param,function(err,result){
                         if(err)
@@ -2108,15 +2108,15 @@ app.post('/getSearchedFollowingPerson',verifyToken,(req,res)=>{
                         sql="select *from(select user.userid,nickname,gender,if(isnull(profileimage),?,profileimage) as profileimage,if(isnull(myfollow.follower),0,1) as following,if(isnull(followcount.followingcount),0,followcount.followingcount) as followingcount from"+
                         " user left outer join (select *from follow where follower=?) myfollow on user.userid=myfollow.userid"+
                         " left outer join (select userid,count(*) as followingcount from follow group by userid) followcount on user.userid=followcount.userid)searcheduser"+
-                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid in (select userid from follow where platform=? and account=?) and nickname like ? order by userid desc limit 20"
-                        param=['none',myresult[0].userid,myresult[0].userid,myresult[0].userid,platform,account,nickname]
+                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid in (select userid from follow where follower=?) and nickname like ? order by userid desc limit 20"
+                        param=['none',myresult[0].userid,myresult[0].userid,myresult[0].userid,myresult[0].userid,nickname]
                     }
                     else{
                         sql="select *from(select user.userid,nickname,gender,if(isnull(user.profileimage),?,user.profileimage) as profileimage,if(isnull(myfollow.follower),0,1) as following,if(isnull(followcount.followingcount),0,followcount.followingcount) as followingcount from"+
                         " user left outer join (select *from follow where follower=?) myfollow on user.userid=myfollow.userid"+
                         " left outer join (select userid,count(*) as followingcount from follow group by userid) followcount on user.userid=followcount.userid)searcheduser"+
-                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid in (select userid from follow where platform=? and account=?) and userid<? and nickname like ? order by userid desc limit 20"
-                        param=['none',myresult[0].userid,myresult[0].userid,myresult[0].userid,platform,account,myresult[0].userid,nickname]
+                        " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid in (select userid from follow where follower=?) and userid<? and nickname like ? order by userid desc limit 20"
+                        param=['none',myresult[0].userid,myresult[0].userid,myresult[0].userid,myresult[0].userid,myresult[0].userid,nickname]
                     }
                     connection.query(sql,param,function(err,result){
                         if(err)
