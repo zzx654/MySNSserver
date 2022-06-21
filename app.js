@@ -4246,7 +4246,7 @@ app.post('/getmyprofile',verifyToken,(req,res)=>{
                 }
                 else
                 {
-                    var query="select *from(select user.userid,age,nickname,gender,profileimage,if(isnull(follower.followercount),0,follower.followercount) as followercount,if(isnull(following.followingcount),0,following.followingcount) as followingcount"+
+                    var query="select *from(select user.userid,age,nickname,gender,profileimage,if(isnull(follower.followercount),0,follower.followercount) as followercount,if(isnull(following.followingcount),0,following.followingcount) as followingcount,"+
                     " if(isnull(post.postscount),0,post.postscount) as postscount from"+
                     " user"+
                     " left outer join (select userid,count(*) as followercount from follow group by userid) follower on user.userid=follower.userid"+
@@ -6813,7 +6813,7 @@ app.post("/checkuser",verifyToken,(req,res)=>{
 })
 app.post("/getuserprofile",(req,res)=>{
     var userid=req.body.userid
-    var query="select *from(select user.userid,age,nickname,gender,profileimage,if(isnull(follower.followercount),0,follower.followercount) as followercount,if(isnull(following.followingcount),0,following.followingcount) as followingcount"+
+    var query="select *from(select user.userid,age,nickname,gender,profileimage,if(isnull(follower.followercount),0,follower.followercount) as followercount,if(isnull(following.followingcount),0,following.followingcount) as followingcount,"+
     " if(isnull(post.postscount),0,post.postscount) as postscount from"+
     " user"+
     " left outer join (select userid,count(*) as followercount from follow group by userid) follower on user.userid=follower.userid"+
