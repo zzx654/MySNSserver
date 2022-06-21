@@ -2025,12 +2025,14 @@ app.post('/getFollowerPerson',verifyToken,(req,res)=>{
                 }
                 else
                 {
-                    var followingid=''
+                    var followingid=0
                     if(userid==undefined){
-                        followerid=myresult[0].userid
+                        followingid=myresult[0].userid
                     }
-                    else
-                    followingid=userid
+                    else{
+                        followingid=userid
+                    }
+       
                 
                     if(lastuserid==undefined)
                     {
