@@ -4247,10 +4247,10 @@ app.post('/getmyprofile',verifyToken,(req,res)=>{
                 else
                 {
                     var query="select *from(select user.userid,age,nickname,gender,profileimage,if(isnull(follower.followercount),0,follower.followercount) as followercount,if(isnull(following.followingcount),0,following.followingcount) as followingcount,"+
-                    " if(isnull(post.postscount),0,post.postscount) as postscount from"+
+                    " if(isnull(userpost.postscount),0,userpost.postscount) as postscount from"+
                     " user"+
                     " left outer join (select userid,count(*) as followercount from follow group by userid) follower on user.userid=follower.userid"+
-                    " left outer join (select userid,count(*) as postscount from post group by userid) post on user.userid=post.userid"
+                    " left outer join (select userid,count(*) as postscount from post group by userid) userpost on user.userid=post.userid"
                     " left outer join(select follower,count(*) as followingcount from follow group by follower) following on user.userid=following.follower"+
                     ")selecteduser where userid=?"
                     var userid=myresult[0].userid
@@ -6814,10 +6814,10 @@ app.post("/checkuser",verifyToken,(req,res)=>{
 app.post("/getuserprofile",(req,res)=>{
     var userid=req.body.userid
     var query="select *from(select user.userid,age,nickname,gender,profileimage,if(isnull(follower.followercount),0,follower.followercount) as followercount,if(isnull(following.followingcount),0,following.followingcount) as followingcount,"+
-    " if(isnull(post.postscount),0,post.postscount) as postscount from"+
+    " if(isnull(userpost.postscount),0,userpost.postscount) as postscount from"+
     " user"+
     " left outer join (select userid,count(*) as followercount from follow group by userid) follower on user.userid=follower.userid"+
-    " left outer join (select userid,count(*) as postscount from post group by userid) post on user.userid=post.userid"
+    " left outer join (select userid,count(*) as postscount from post group by userid) userpost on user.userid=userpost.userid"
     " left outer join(select follower,count(*) as followingcount from follow group by follower) following on user.userid=following.follower"+
     ")selecteduser where userid=?"
     
