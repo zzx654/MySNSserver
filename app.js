@@ -4246,11 +4246,13 @@ app.post('/getmyprofile',verifyToken,(req,res)=>{
                 }
                 else
                 {
-                    var query="select *from(select user.userid,age,nickname,gender,profileimage,if(isnull(follower.followercount),0,follower.followercount) as followercount,if(isnull(following.followingcount),0,following.followingcount) as followingcount from"+
-                                " user"+
-                                " left outer join (select userid,count(*) as followercount from follow group by userid) follower on user.userid=follower.userid"+
-                                " left outer join(select follower,count(*) as followingcount from follow group by follower) following on user.userid=following.follower"+
-                                ")selecteduser where userid=?"
+                    var query="select *from(select user.userid,age,nickname,gender,profileimage,if(isnull(follower.followercount),0,follower.followercount) as followercount,if(isnull(following.followingcount),0,following.followingcount) as followingcount"+
+                    " if(isnull(post.postscount),0,post.postscount) as postscount from"+
+                    " user"+
+                    " left outer join (select userid,count(*) as followercount from follow group by userid) follower on user.userid=follower.userid"+
+                    " left outer join (select userid,count(*) as postscount from post group by userid) post on user.userid=post.userid"
+                    " left outer join(select follower,count(*) as followingcount from follow group by follower) following on user.userid=following.follower"+
+                    ")selecteduser where userid=?"
                     var userid=myresult[0].userid
                     connection.query(query,userid,function(err,result){
                         if(err)
@@ -4268,6 +4270,7 @@ app.post('/getmyprofile',verifyToken,(req,res)=>{
                                     gender:'',
                                     followercount:0,
                                     followingcount:0,
+                                    postscount:0,
                                     age:0
                                     })
                             }
@@ -4279,6 +4282,7 @@ app.post('/getmyprofile',verifyToken,(req,res)=>{
                                     gender:result[0].gender,
                                     followercount:result[0].followercount,
                                     followingcount:result[0].followingcount,
+                                    postscount:result[0].postscount,
                                     age:result[0].age
                                 })
                             }  
@@ -6809,9 +6813,11 @@ app.post("/checkuser",verifyToken,(req,res)=>{
 })
 app.post("/getuserprofile",(req,res)=>{
     var userid=req.body.userid
-    var query="select *from(select user.userid,age,nickname,gender,profileimage,if(isnull(follower.followercount),0,follower.followercount) as followercount,if(isnull(following.followingcount),0,following.followingcount) as followingcount from"+
+    var query="select *from(select user.userid,age,nickname,gender,profileimage,if(isnull(follower.followercount),0,follower.followercount) as followercount,if(isnull(following.followingcount),0,following.followingcount) as followingcount"+
+    " if(isnull(post.postscount),0,post.postscount) as postscount from"+
     " user"+
     " left outer join (select userid,count(*) as followercount from follow group by userid) follower on user.userid=follower.userid"+
+    " left outer join (select userid,count(*) as postscount from post group by userid) post on user.userid=post.userid"
     " left outer join(select follower,count(*) as followingcount from follow group by follower) following on user.userid=following.follower"+
     ")selecteduser where userid=?"
     
@@ -6831,6 +6837,7 @@ app.post("/getuserprofile",(req,res)=>{
                     gender:'',
                     followercount:0,
                     followingcount:0,
+                    postscount:0,
                     age:0
                 })
             }
@@ -6842,6 +6849,7 @@ app.post("/getuserprofile",(req,res)=>{
                     gender:result[0].gender,
                     followercount:result[0].followercount,
                     followingcount:result[0].followingcount,
+                    postscount:result[0].postscount,
                     age:result[0].age
                 })
             }  
