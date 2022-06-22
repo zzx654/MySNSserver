@@ -2638,7 +2638,7 @@ app.post('/getHotContents',verifyToken,(req,res)=>{
                         queryStr="and not audio=?"
                         queryparam='NONE'
                     }
-                    else{
+                    else if(type=='VOTE'){
                         queryStr="and not vote=?"
                         queryparam='none'
                     }
