@@ -3465,6 +3465,7 @@ app.post('/getuserPosts',verifyToken,(req,res)=>{
     var postdate=req.body.lastpostdate
     var latitude=req.body.latitude
     var longitude=req.body.longitude
+    var limit=req.body.limit
     var param=[]
     var query=""
     var getmy='select *from user where platform=? and account=?'
@@ -3493,7 +3494,7 @@ app.post('/getuserPosts',verifyToken,(req,res)=>{
                     {
                         if(postnum==undefined)
                         {
-                            param=[userid,""]
+                            param=[userid,"",Number(limit)]
                             query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
                             +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
                             +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
@@ -3501,11 +3502,11 @@ app.post('/getuserPosts',verifyToken,(req,res)=>{
                             " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                             " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                             " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                            " where userid=? and anonymous=? order by date desc,postnum desc limit 20"
+                            " where userid=? and anonymous=? order by date desc,postnum desc limit ?"
                         }
                         else
                         {
-                            param=[postdate,postdate,postnum,userid,""]
+                            param=[postdate,postdate,postnum,userid,"",Number(limit)]
                             query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
                             +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
                             +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
@@ -3513,7 +3514,7 @@ app.post('/getuserPosts',verifyToken,(req,res)=>{
                             " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                             " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                             " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                            " where (date<? or (date=? and postnum<?)) and userid=? and anonymous=? order by date desc,postnum desc limit 20"
+                            " where (date<? or (date=? and postnum<?)) and userid=? and anonymous=? order by date desc,postnum desc limit ?"
                         
                         }
                     }
@@ -3521,7 +3522,7 @@ app.post('/getuserPosts',verifyToken,(req,res)=>{
                     {
                         if(postnum==undefined)
                         {
-                            param=[latitude,longitude,latitude,userid,""]
+                            param=[latitude,longitude,latitude,userid,"",Number(limit)]
                             query="select post.postnum,post.postid,post.userid,post.vote,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
                             +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,if(isnull(post.latitude),-100.0,(6371*acos(cos(radians(?))*cos(radians(post.latitude))*cos"+
                             "(radians(post.longitude)-radians(?))+sin(radians(?))*sin(radians(post.latitude))))) as distance,ifnull(vote.votecount,0) as votecount from post left outer"
@@ -3530,11 +3531,11 @@ app.post('/getuserPosts',verifyToken,(req,res)=>{
                             " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                             " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                             " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                            " where userid=? and anonymous=? order by date desc,postnum desc limit 20"
+                            " where userid=? and anonymous=? order by date desc,postnum desc limit ?"
                         }
                         else
                         {
-                            param=[latitude,longitude,latitude,postdate,postdate,postnum,userid,""]
+                            param=[latitude,longitude,latitude,postdate,postdate,postnum,userid,"",Number(limit)]
                             query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
                             +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,if(isnull(post.latitude),-100.0,(6371*acos(cos(radians(?))*cos(radians(post.latitude))*cos"+
                             "(radians(post.longitude)-radians(?))+sin(radians(?))*sin(radians(post.latitude))))) as distance,ifnull(vote.votecount,0) as votecount from post left outer"
@@ -3543,7 +3544,152 @@ app.post('/getuserPosts',verifyToken,(req,res)=>{
                             " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                             " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                             " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                            " where (date<? or (date=? and postnum<?)) and userid=? and anonymous=? order by date desc,postnum desc limit 20"
+                            " where (date<? or (date=? and postnum<?)) and userid=? and anonymous=? order by date desc,postnum desc limit ?"
+                
+                        }
+                
+                    }
+                    connection.query(query,param,function(err,result){
+                        if(err)
+                        {
+                            console.log(err)
+                        }
+                        else
+                        {
+                            if(result && result.length)
+                            {
+                                res.json({
+                                    resultCode:200,
+                                    posts:result
+                                
+                                })
+                            }
+                            else{
+                                res.json({
+                                    resultCode:100,
+                                    posts:[]
+                                })
+                
+                            } 
+                        }
+                    })
+                
+                        
+                    
+                }
+            })
+        }
+        })
+})
+app.post('/getuserContents',verifyToken,(req,res)=>{
+    //var platform=req.body.platform
+    //var account=req.body.account
+    var userid=req.body.userid
+    var postnum=req.body.lastpostnum
+    var postdate=req.body.lastpostdate
+    var latitude=req.body.latitude
+    var longitude=req.body.longitude
+    var limit=req.body.limit
+    var type=req.body.type
+    var param=[]
+    var query=""
+    var getmy='select *from user where platform=? and account=?'
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+        {
+            deleteToken(req.token,function(){
+            res.json({
+                resultCode:505,
+                posts:[]
+            })
+        })
+        }
+        else
+        {
+            var platform=authData.user.platform
+            var account=authData.user.account
+            connection.query(getmy,[platform,account],function(err,myresult){
+                if(err)
+                {
+                    console.log(err)
+                }
+                else
+                {
+                    if(latitude==undefined)
+                    {
+                        if(postnum==undefined)
+                        {
+                            var queryStr=''
+                            var queryparam=''
+                            if(type=='IMAGE')
+                            {
+                                queryStr="and not image=?"
+                                queryparam='NONE'
+                            }
+                            else if(type=='AUDIO')
+                            {
+                                queryStr="and not audio=?"
+                                queryparam='NONE'
+                            }
+                            else if(type=='VOTE'){
+                                queryStr="and not vote=?"
+                                queryparam='none'
+                            }
+                            param=[userid,"",queryparam,Number(limit)]
+                            query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where userid=? and anonymous=? "+queryStr+
+                            " order by date desc,postnum desc limit ?"
+                        }
+                        else
+                        {
+                            param=[postdate,postdate,postnum,userid,"",queryparam,Number(limit)]
+                            query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where (date<? or (date=? and postnum<?)) and userid=? and anonymous=? "+queryStr+
+                            " order by date desc,postnum desc limit ?"
+                        
+                        }
+                    }
+                    else
+                    {
+                        if(postnum==undefined)
+                        {
+                            param=[latitude,longitude,latitude,userid,"",queryparam,Number(limit)]
+                            query="select post.postnum,post.postid,post.userid,post.vote,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,if(isnull(post.latitude),-100.0,(6371*acos(cos(radians(?))*cos(radians(post.latitude))*cos"+
+                            "(radians(post.longitude)-radians(?))+sin(radians(?))*sin(radians(post.latitude))))) as distance,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where userid=? and anonymous=? "+queryStr+
+                            " order by date desc,postnum desc limit ?"
+                        }
+                        else
+                        {
+                            param=[latitude,longitude,latitude,postdate,postdate,postnum,userid,"",queryparam,Number(limit)]
+                            query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,if(isnull(post.latitude),-100.0,(6371*acos(cos(radians(?))*cos(radians(post.latitude))*cos"+
+                            "(radians(post.longitude)-radians(?))+sin(radians(?))*sin(radians(post.latitude))))) as distance,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " where (date<? or (date=? and postnum<?)) and userid=? and anonymous=? "+queryStr+
+                            " order by date desc,postnum desc limit ?"
                 
                         }
                 
