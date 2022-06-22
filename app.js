@@ -2595,6 +2595,151 @@ app.post('/getSearchedTag',verifyToken,(req,res)=>{
 
 
 })
+app.post('/getHotContents',verifyToken,(req,res)=>{
+    var postnum=req.body.lastpostnum
+    var posthot=req.body.lastposthot
+    var latitude=req.body.latitude
+    var longitude=req.body.longitude
+    var limit=req.body.limit
+    var type=req.body.type
+    var query=""
+    var param=[]
+    var getmy='select *from user where platform=? and account=?'
+    jwt.verify(req.token,'secretkey',(err,authData)=>{
+        if(err)
+        {
+            deleteToken(req.token,function(){
+            res.json({
+                resultCode:505,
+                posts:[]
+            })
+        })
+        }
+        else
+        {
+            var platform=authData.user.platform
+            var account=authData.user.account
+            connection.query(getmy,[platform,account],function(err,myresult){
+                if(err)
+                {
+                    console.log(err)
+                }
+                else
+                {
+                    var queryStr=''
+                    var queryparam=''
+                    if(type=='IMAGE')
+                    {
+                        queryStr="and not image=?"
+                        queryparam='NONE'
+                    }
+                    else if(type=='AUDIO')
+                    {
+                        queryStr="and not audio=?"
+                        queryparam='NONE'
+                    }
+                    else{
+                        queryStr="and not vote=?"
+                        queryparam='none'
+                    }
+                    console.log(postnum)
+                
+                    if(latitude==undefined)
+                    {
+                        if(postnum==undefined)
+                        {
+                            param=[myresult[0].userid,myresult[0].userid,queryparam,Number(limit)]
+                            query="select *from(select post.postnum,post.postid,post.userid,post.vote,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id)hot"+
+                            " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?)"+
+                            queryStr+"order by commentcount+likecount+votecount desc,postnum desc limit ?"
+                        }
+                        else
+                        {
+                 param=[posthot,posthot,postnum,myresult[0].userid,myresult[0].userid,queryparam,Number(limit)]
+                            query="select *from(select post.postnum,post.vote,post.postid,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+        
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id)hot"+
+                            " where (commentcount+likecount<? or (commentcount+likecount=? and postnum<?)) and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?)"+
+                            queryStr+"order by likecount+commentcount+votecount desc,postnum desc limit ?"
+                        }
+                    }
+                    else
+                    {
+                        if(postnum==undefined)
+                        {
+                            param=[latitude,longitude,latitude,myresult[0].userid,myresult[0].userid,queryparam,Number(limit)]
+                            query="select * from(select post.postnum,post.vote,post.postid,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,if(isnull(post.latitude),-100.0,(6371*acos(cos(radians(?))*cos(radians(post.latitude))*cos"+
+                            "(radians(post.longitude)-radians(?))+sin(radians(?))*sin(radians(post.latitude))))) as distance,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id)hot "+
+                            " where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?)"+
+                             queryStr+" order by likecount+commentcount+votecount desc,postnum desc limit ?"
+                        }
+                        else
+                        {
+                            param=[latitude,longitude,latitude,posthot,posthot,postnum,myresult[0].userid,myresult[0].userid,queryparam,Number(limit)]
+                            
+                            query="select *from(select post.postnum,post.vote,post.postid,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
+                            +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,if(isnull(post.latitude),-100.0,(6371*acos(cos(radians(?))*cos(radians(post.latitude))*cos"+
+                            "(radians(post.longitude)-radians(?))+sin(radians(?))*sin(radians(post.latitude))))) as distance,ifnull(vote.votecount,0) as votecount from post left outer"
+                            +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
+                            " join (select postid,count(*) as likecount from likepost group by postid) lik on post.postid=lik.postid"+
+                            " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
+                            " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
+                            " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id)hot "+
+                            " where (commentcount+likecount<? or (commentcount+likecount=? and postnum<?)) and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?)"+
+                            queryStr+" order by likecount+commentcount+votecount desc,postnum desc limit ?"
+                        }
+                    }
+                            console.log(param)
+                            console.log(query)
+                     connection.query(query,param,function(err,result){
+                        if(err)
+                        {
+                            console.log(err)
+                        }
+                        else
+                        {
+                            if(result && result.length)
+                            {
+                                console.log(result)
+                                console.log(result[0].hot)
+                                res.json({
+                                    resultCode:200,
+                                    posts:result
+                                
+                                })
+                            }
+                            else{
+                        
+                                res.json({
+                                    resultCode:100,
+                                    posts:[]
+                                })
+                
+                            } 
+                        }
+                    })
+                }
+            })
+        }
+        })
+})
 app.post('/getHotImages',verifyToken,(req,res)=>{
     var postnum=req.body.lastpostnum
     var posthot=req.body.lastposthot
