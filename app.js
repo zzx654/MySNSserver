@@ -148,43 +148,28 @@ app.post('/upload', fileUpload.single('image'), (req, res) => {
   }
   res.send(JSON.stringify(imageData))
 })
-app.post('/uploadprofileimg', verifyToken,upload.single('image'), (req, res) => {
+app.post('/uploadimg', verifyToken,upload.single('image'), (req, res) => {
     console.log(req.file)
     jwt.verify(req.token,'secretkey',(err,authData)=>{
         if(err)
         {
-        console.log('인증오류발생')
-        deleteToken(req.token,function(){
-        res.json({
-            resultCode:505,
-            imageUri:image
-        })
-    })
+            console.log('인증오류발생')
+            deleteToken(req.token,function(){
+            res.json({
+             resultCode:505,
+             imageUri:image
+          })
+          })
         }
         else
         {
-            var platform=authData.user.platform
-            var account=authData.user.account
-            var getmy='select *from user where platform=? and account=?'
-            connection.query(getmy,[platform,account],function(err,myresult){
-                if(err)
-                {
-                    console.log(err)
-                }
-                else
-                {
                     var image=req.file.location
-                    const result={
-                        ImageUrl:image,
-                        resultCode:200
-                    }
-                    io.to(myresult[0].socketid).emit('getuploadedimg',JSON.stringify(result))
+               
                     res.json({
                         resultCode:200,
                         imageUri:image
                     })
-                }
-            })
+                
         }
     })
   
@@ -348,7 +333,7 @@ io.sockets.on('connection', (socket) => {
                                     profileimage:result[0].profileimage,
                                 }
                                 io.to(userresult[0].socketid).emit('updaterooms',JSON.stringify(roomcontent))
-                                socket.broadcast.to(`${messageData.roomid}`).emit('update', JSON.stringify(sendcontent))
+                                //socket.broadcast.to(`${messageData.roomid}`).emit('update', JSON.stringify(sendcontent))
                             }
                         })
                 }
@@ -356,14 +341,6 @@ io.sockets.on('connection', (socket) => {
         })
     }
 })
-
-  socket.on('newImage', (data) => {
-    const messageData = JSON.parse(data)
-    // 안드로이드 에뮬레이터 기준으로 url은 10.0.2.2, 스마트폰에서 실험해보고 싶으면 자신의 ip 주소로 해야 한다.
-    messageData.content = 'https://socialanony.herokuapp.com/' + messageData.content
-    console.log(`[Room Number ${messageData.roomid}] ${messageData.sendername} : ${messageData.content}`)
-    socket.broadcast.to(`${messageData.roomid}`).emit('update', JSON.stringify(messageData))
-  })
 
   socket.on('disconnect', () => {
     console.log(`Socket disconnected : ${socket.id}`)
