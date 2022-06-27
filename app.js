@@ -6607,10 +6607,11 @@ app.post('/getChatprofiles',verifyToken,(req,res)=>{
                 else{
                     var myid=myresult[0].userid
 
-                    var getprofiles='select roomid,if(isnull(user.userid),?,user.userid) as userid,if(isnull(user.profileimage),?,user.profileimage) as profileimage,if(isnull(user.gender),?,user.gender) as gender,if(isnull(user.nickname),?,user.nickname) as nickname from((select roomid,organizer as userid from chatroom'+
+                    var getprofiles='select * from(select roomid,if(isnull(user.userid),?,user.userid) as userid,if(isnull(user.profileimage),?,user.profileimage) as profileimage,if(isnull(user.gender),?,user.gender) as gender,if(isnull(user.nickname),?,user.nickname) as nickname from((select roomid,organizer as userid from chatroom'+
                     ' where participant=? and joined=1) union (select roomid,participant as userid from chatroom where organizer=?)) roomuser left outer join (select userid,'+
-                    'nickname,profileimage,gender from user)user on roomuser.userid=user.userid'
+                    'nickname,profileimage,gender from user)user on roomuser.userid=user.userid)rooms where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?)'
 
+                
                     connection.query(getprofiles,[0,'none','비공개','대화상대없음',myid,myid],function(err,result){
                         if(err)
                         {
