@@ -6612,7 +6612,7 @@ app.post('/getChatprofiles',verifyToken,(req,res)=>{
                     'nickname,profileimage,gender from user)user on roomuser.userid=user.userid)rooms where userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?)'
 
                 
-                    connection.query(getprofiles,[0,'none','비공개','대화상대없음',myid,myid],function(err,result){
+                    connection.query(getprofiles,[0,'none','비공개','대화상대없음',myid,myid,myid,myid],function(err,result){
                         if(err)
                         {
                             console.log(err)
