@@ -237,7 +237,7 @@ io.sockets.on('connection', (socket) => {
     var getmy='select *from user where userid=?'
     var exit1='update chatroom set participant=? where participant=? and roomid=?'
     var exit2='update chatroom set organizer=? where organizer=? and roomid=?'
-    var getuser='SELECT *FROM user WHERE userid=?'
+    var getuser='SELECT *FROM user WHERE userid=? and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?)'
     var dchanged=0
     if(messageData.dateChanged==true)
         dchanged=1
@@ -264,7 +264,7 @@ io.sockets.on('connection', (socket) => {
     }
     if(messageData.receiverid!=0)
     {
-        connection.query(getuser,messageData.receiverid,function(err,userresult){
+        connection.query(getuser,[messageData.receiverid,messageData.senderid,messageData.senderid],function(err,userresult){
             if(err)
             {
                 console.log(err)
