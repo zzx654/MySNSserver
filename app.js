@@ -91,6 +91,7 @@ const admin=require("firebase-admin")
 
 const { rejects } = require('assert');
 const { connect } = require('http2');
+const { timeStamp } = require('console');
 
 admin.initializeApp({ credential: admin.credential.cert({
     "projectId":process.env.FIREBASE_PROJECT_ID,
@@ -1886,8 +1887,60 @@ app.post('/toggleFollow',verifyToken,(req,res)=>{
                     var param=[userid,myresult[0].userid]
                     if(following==0)
                     {
+                        var getuser='select *from user where userid=?'
+                        connection.query(getuser,userid,function(err,userresult){
+                            if(err){
+                                console.log(err)
+                            }
+                            else{
+                                var notimessage=myresult[0].nickname+'님이 당신을 팔로우했습니다'
+                                var insertnoti='insert into noti(platform,account,date,type,text,followerid) values(?,?,?,?,?,?)'
+                                var date=timestamp()
+                                var notiparam=[userresult[0].platform,userresult[0].account,date,6,notimessage,myresult[0].userid]
+                                connection.query(insertnoti,notiparam,function(err,result){
+                                    if(err){
+                                        console.log(err)
+                                    }
+                                    else{
+                                        const notiData = {
+                                            notiid : result.insertId,
+                                            type:6,
+                                            text:notimessage,
+                                            date:date,
+                                            followerid:myresult[0].userid,
+                                            isread:0
+                                          }
+                                          io.to(userresult[0].socketid).emit('updatenoti',JSON.stringify(notiData))
+                                          var payload={
+                                            data:{
+                                                title:'고민나눔',
+                                                message:notimessage,
+                                                notitype:'followed',
+                                                click_action:'NOTIFICATION_CLICK'
+                                            },
+                                            token:userresult[0].fcmtoken
+                                        
+                                        }
+                                        if(userresult[0].fcmtoken!="")
+                                        {
+                                            admin.messaging().send(payload)
+                                            .then(function(response){
+                                                console.log("Succesfully send message",response)
+                                            })
+                                            .catch(function(error){
+                                                console.log("Error sending message",error)
+                                            })
+                                        }
+                                    }
+                                })
+                                
+                            }
+                        })
                         query="insert into follow (userid,follower) values(?,?)"
-                    
+               
+
+
+                
                     }
                     else{
                         query="delete from follow where userid=? and follower=?"
@@ -7122,6 +7175,7 @@ app.post("/checkuser",verifyToken,(req,res)=>{
                 }
                 else{
                     var checkblock='select *from block where (userid=? and blockeduserid=?) or (userid=? and blockeduserid=?)'
+                    var checkfollowing='select *from follow where userid=? and follower=?'
                     var checkwithdrawal='select *from user where userid=?'
 
                     connection.query(checkblock,[userid,myresult[0].userid,myresult[0].userid,userid],function(err,result){
@@ -7138,27 +7192,40 @@ app.post("/checkuser",verifyToken,(req,res)=>{
                                 })
                             }
                             else{
-                                connection.query(checkwithdrawal,userid,function(err,result){
-                                    if(err)
-                                    {
-
+                                connection.query(checkfollowing,[userid,myresult[0].userid],function(err,followingresult){
+                                    if(err){
                                     }
                                     else{
-                                        if(result[0].platform=='OUT')
-                                        {
-                                            res.json({
-                                                resultCode:400,
-                                                value:userid
-                                            })
-                                        }
-                                        else{
-                                            res.json({
-                                                resultCode:200,
-                                                value:userid
-                                            })
-                                        }
+                                        connection.query(checkwithdrawal,userid,function(err,result){
+                                            if(err)
+                                            {
+        
+                                            }
+                                            else{
+                                                var following=0
+                                                if(followingresult.length!=0){
+                                                    following=1
+                                                }
+                                                if(result[0].platform=='OUT')
+                                                {
+                                                    res.json({
+                                                        resultCode:400,
+                                                        userid:userid,
+                                                        following:following
+                                                    })
+                                                }
+                                                else{
+                                                    res.json({
+                                                        resultCode:200,
+                                                        userid:userid,
+                                                        following:following
+                                                    })
+                                                }
+                                            }
+                                        })
                                     }
                                 })
+                              
                             }
                         }
                     })
@@ -7376,6 +7443,11 @@ function deleteToken(token,callback){
             callback()
         }
     })
+}
+function timestamp(){
+    var today = new Date();
+    today.setHours(today.getHours() + 9);
+    return today.toISOString().replace('T', ' ').substring(0, 19);
 }
 function send_message(phone) {
     let number = Math.floor(Math.random() * 1000000)+100000; // ★★난수 발생 ★★★★★
