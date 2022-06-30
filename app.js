@@ -229,19 +229,19 @@ io.sockets.on('connection', (socket) => {
   })
     socket.on('newMessage', (data) => {
     const messageData = JSON.parse(data)
-    console.log(messageData.dateChanged)
-    var param=[messageData.senderid,messageData.roomid,messageData.sendTime,messageData.type,messageData.content,0]
-    var dateparam=[
-        [messageData.senderid,messageData.roomid,messageData.sendTime,'DATE',messageData.changedDate,0],
-        param
-    ]
+
+    //var param=[messageData.senderid,messageData.roomid,messageData.sendTime,messageData.type,messageData.content,0]
+    //var dateparam=[
+     //   [messageData.senderid,messageData.roomid,messageData.sendTime,'DATE',messageData.changedDate,0],
+      //  param
+    //]
     var getmy='select *from user where userid=?'
     var exit1='update chatroom set participant=? where participant=? and roomid=?'
     var exit2='update chatroom set organizer=? where organizer=? and roomid=?'
     var getuser='SELECT *FROM user WHERE userid=? and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?)'
-    var dchanged=0
-    if(messageData.dateChanged==true)
-        dchanged=1
+    //var dchanged=0
+    //if(messageData.dateChanged==true)
+      //  dchanged=1
     if(messageData.type=='EXIT')
     {
         connection.query(exit1,[0,messageData.senderid,messageData.roomid],function(err,result){
@@ -283,7 +283,7 @@ io.sockets.on('connection', (socket) => {
                                 content='사진을 보냈습니다.'
                             var payload={
                                 data:{
-                                    dateChanged:String(dchanged),
+                                  //  dateChanged:String(dchanged),
                                     senderid:String(messageData.senderid),
                                     roomid:messageData.roomid,
                                     date:messageData.sendTime,
@@ -312,8 +312,8 @@ io.sockets.on('connection', (socket) => {
                                 console.log(err)
                             }
                             else{
-                                                                 var roomcontent={
-                                    dateChanged:dchanged,
+                                var roomcontent={
+                                    //dateChanged:dchanged,
                                     profileimage:result[0].profileimage,
                                     nickname:result[0].nickname,
                                     gender:result[0].gender,
@@ -323,7 +323,7 @@ io.sockets.on('connection', (socket) => {
                                     type:messageData.type,
                                     content:messageData.content
                                 }
-                                var sendcontent={
+                                /**var sendcontent={
                                     senderid:messageData.senderid,
                                     date:messageData.sendTime,
                                     type:messageData.type,
@@ -332,7 +332,7 @@ io.sockets.on('connection', (socket) => {
                                     nickname:result[0].nickname,
                                     gender:result[0].gender,
                                     profileimage:result[0].profileimage,
-                                }
+                                }**/
                                 io.to(userresult[0].socketid).emit('updaterooms',JSON.stringify(roomcontent))
                                 //socket.broadcast.to(`${messageData.roomid}`).emit('update', JSON.stringify(sendcontent))
                             }
