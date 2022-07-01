@@ -230,18 +230,13 @@ io.sockets.on('connection', (socket) => {
     socket.on('newMessage', (data) => {
     const messageData = JSON.parse(data)
 
-    //var param=[messageData.senderid,messageData.roomid,messageData.sendTime,messageData.type,messageData.content,0]
-    //var dateparam=[
-     //   [messageData.senderid,messageData.roomid,messageData.sendTime,'DATE',messageData.changedDate,0],
-      //  param
-    //]
+
     var getmy='select *from user where userid=?'
     var exit1='update chatroom set participant=? where participant=? and roomid=?'
     var exit2='update chatroom set organizer=? where organizer=? and roomid=?'
     var getuser='SELECT *FROM user WHERE userid=? and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?)'
-    //var dchanged=0
-    //if(messageData.dateChanged==true)
-      //  dchanged=1
+
+    var curtime=timeStamp()
     if(messageData.type=='EXIT')
     {
         connection.query(exit1,[0,messageData.senderid,messageData.roomid],function(err,result){
@@ -286,7 +281,7 @@ io.sockets.on('connection', (socket) => {
                                   //  dateChanged:String(dchanged),
                                     senderid:String(messageData.senderid),
                                     roomid:messageData.roomid,
-                                    date:messageData.sendTime,
+                                    date:curtime,
                                     type:messageData.type,
                                     content:messageData.content,
                                     title:'고민나눔',
@@ -319,20 +314,16 @@ io.sockets.on('connection', (socket) => {
                                     gender:result[0].gender,
                                     senderid:messageData.senderid,
                                     roomid:messageData.roomid,
-                                    date:messageData.sendTime,
+                                    date:curtime,
                                     type:messageData.type,
                                     content:messageData.content
                                 }
-                                /**var sendcontent={
-                                    senderid:messageData.senderid,
-                                    date:messageData.sendTime,
+                                var sentmessage={
                                     type:messageData.type,
                                     content:messageData.content,
-                                    isread:1,
-                                    nickname:result[0].nickname,
-                                    gender:result[0].gender,
-                                    profileimage:result[0].profileimage,
-                                }**/
+                                    date:curtime
+                                }
+                                io.to(result[0].socketid).emit('sendResponse',JSON.stringify(sentmessage))
                                 io.to(userresult[0].socketid).emit('updaterooms',JSON.stringify(roomcontent))
                                 //socket.broadcast.to(`${messageData.roomid}`).emit('update', JSON.stringify(sendcontent))
                             }
@@ -632,7 +623,7 @@ app.post('/postContents',verifyToken,(req,res)=>{
     var tags=req.body.tags
     var latitude=req.body.latitude
     var longitude=req.body.longitude
-    var date=req.body.date
+    var date=timeStamp()
     var image=req.body.image
     var audio=req.body.audio
     console.log(latitude)
@@ -1651,7 +1642,7 @@ app.post('/toggleLikePost',verifyToken,(req,res)=>{
         {
             var platform=authData.user.platform
             var account=authData.user.account
-            var date=req.body.date
+            var date=timeStamp()
             var togglemy=req.body.togglemy
             var postuserid=req.body.postuserid
             //var platform=req.body.platform
@@ -4263,7 +4254,7 @@ app.post('/blockcommentuser',verifyToken,(req,res)=>{
              //var account=req.body.account
              var blockuserid=req.body.blockuserid
              var popback=req.body.popback
-             var time=req.body.time
+             var time=timeStamp()
              var getmy='select userid from user where platform=? and account=?'
              var insertblock='insert into block(userid,blockeduserid,time) values(?,?,?)'
              var param=[platform,account]
@@ -4416,7 +4407,7 @@ app.post('/blockpostuser',verifyToken,(req,res)=>{
             //var platform=req.body.platform
             //var account=req.body.account
             var blockuserid=req.body.blockuserid
-            var time=req.body.time
+            var time=timeStamp()
             var getmy='select userid from user where platform=? and account=?'
             var insertblock=''
             var param=[platform,account]
@@ -4485,7 +4476,7 @@ app.post('/blockchatuser',verifyToken,(req,res)=>{
             //var platform=req.body.platform
             //var account=req.body.account
             var blockuserid=req.body.blockuserid
-            var time=req.body.time
+            var time=timeStamp()
             var getmy='select userid from user where platform=? and account=?'
             var insertblock=''
             var param=[platform,account]
@@ -4840,7 +4831,7 @@ app.post('/togglecomment',verifyToken,(req,res)=>{
             var param=[commentid,platform,account]
             var commentuserid=req.body.commentuserid
             var depth=req.body.depth
-            var time=req.body.time
+            var time=timeStamp()
             var postid=req.body.postid
         
           
@@ -5176,7 +5167,7 @@ app.post('/postReply',verifyToken,(req,res)=>{
             var postid=req.body.postid
             var commentid=req.body.commentid
 
-            var time=req.body.time
+            var time=timeStamp()
             var anonymous=req.body.anonymous
             var text=req.body.text
             var postuserid=req.body.postuserid
@@ -5639,7 +5630,7 @@ app.post('/postComment',verifyToken,(req,res)=>{
             var account=authData.user.account
             var postid=req.body.postid
 
-            var time=req.body.time
+            var time=timeStamp()
             var anonymous=req.body.anonymous
             var text=req.body.text
             var blockquery='select *from block where (userid=? and blockeduserid=?) or (userid=? and blockeduserid=?)'
@@ -6698,7 +6689,7 @@ app.post('/acceptchat',(req,res)=>{
     var roomid=req.body.roomid
     var organizer=req.body.organizer
     var participant=req.body.participant
-    var time=req.body.time
+    var time=timeStamp()
 
 
     var join='update chatroom set joined=1 where roomid=?'
