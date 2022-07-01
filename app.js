@@ -236,7 +236,7 @@ io.sockets.on('connection', (socket) => {
     var exit2='update chatroom set organizer=? where organizer=? and roomid=?'
     var getuser='SELECT *FROM user WHERE userid=? and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?)'
 
-    var curtime=timeStamp()
+    var curtime=timestamp()
     if(messageData.type=='EXIT')
     {
         connection.query(exit1,[0,messageData.senderid,messageData.roomid],function(err,result){
@@ -624,7 +624,7 @@ app.post('/postContents',verifyToken,(req,res)=>{
     var tags=req.body.tags
     var latitude=req.body.latitude
     var longitude=req.body.longitude
-    var date=timeStamp()
+    var date=timestamp()
     var image=req.body.image
     var audio=req.body.audio
     console.log(latitude)
@@ -1643,7 +1643,7 @@ app.post('/toggleLikePost',verifyToken,(req,res)=>{
         {
             var platform=authData.user.platform
             var account=authData.user.account
-            var date=timeStamp()
+            var date=timestamp()
             var togglemy=req.body.togglemy
             var postuserid=req.body.postuserid
             //var platform=req.body.platform
@@ -4255,7 +4255,7 @@ app.post('/blockcommentuser',verifyToken,(req,res)=>{
              //var account=req.body.account
              var blockuserid=req.body.blockuserid
              var popback=req.body.popback
-             var time=timeStamp()
+             var time=timestamp()
              var getmy='select userid from user where platform=? and account=?'
              var insertblock='insert into block(userid,blockeduserid,time) values(?,?,?)'
              var param=[platform,account]
@@ -4408,7 +4408,7 @@ app.post('/blockpostuser',verifyToken,(req,res)=>{
             //var platform=req.body.platform
             //var account=req.body.account
             var blockuserid=req.body.blockuserid
-            var time=timeStamp()
+            var time=timestamp()
             var getmy='select userid from user where platform=? and account=?'
             var insertblock=''
             var param=[platform,account]
@@ -4477,7 +4477,7 @@ app.post('/blockchatuser',verifyToken,(req,res)=>{
             //var platform=req.body.platform
             //var account=req.body.account
             var blockuserid=req.body.blockuserid
-            var time=timeStamp()
+            var time=timestamp()
             var getmy='select userid from user where platform=? and account=?'
             var insertblock=''
             var param=[platform,account]
@@ -4832,7 +4832,7 @@ app.post('/togglecomment',verifyToken,(req,res)=>{
             var param=[commentid,platform,account]
             var commentuserid=req.body.commentuserid
             var depth=req.body.depth
-            var time=timeStamp()
+            var time=timestamp()
             var postid=req.body.postid
         
           
@@ -5168,7 +5168,7 @@ app.post('/postReply',verifyToken,(req,res)=>{
             var postid=req.body.postid
             var commentid=req.body.commentid
 
-            var time=timeStamp()
+            var time=timestamp()
             var anonymous=req.body.anonymous
             var text=req.body.text
             var postuserid=req.body.postuserid
@@ -5631,7 +5631,7 @@ app.post('/postComment',verifyToken,(req,res)=>{
             var account=authData.user.account
             var postid=req.body.postid
 
-            var time=timeStamp()
+            var time=timestamp()
             var anonymous=req.body.anonymous
             var text=req.body.text
             var blockquery='select *from block where (userid=? and blockeduserid=?) or (userid=? and blockeduserid=?)'
@@ -6690,7 +6690,7 @@ app.post('/acceptchat',(req,res)=>{
     var roomid=req.body.roomid
     var organizer=req.body.organizer
     var participant=req.body.participant
-    var time=timeStamp()
+    var time=timestamp()
 
 
     var join='update chatroom set joined=1 where roomid=?'
