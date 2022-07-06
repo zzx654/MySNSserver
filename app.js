@@ -572,40 +572,6 @@ app.post('/findpassword',(req,res)=>{
     })
 
 })
-
-app.post('/requestEmail',(req,res)=>{
-
-    var email=req.body.email
-    console.log(email)
-    
-    var sql='select *from user where account=? and platform=?'
-    var param=[email,'NONE']
-    connection.query(sql,param,function(err,result){
-        
-        if(err)
-        {
-            console.log(err)
-        }
-        else{
-            
-            if(result.length==0)
-            {
-                 
-               res.json({
-                   resultCode:200
-               })
-            }
-            else{
-                res.json({
-                    resultCode:100
-                })
-            }
-        }
-    })
-   
-
-
-})
 app.post('/postContent',(req,res)=>{
     res.json({
         text:req.body.content,
@@ -927,7 +893,23 @@ app.post('/authcomplete',verifyToken,(req,res)=>{
 
     })
 })
+app.post('/verifycode',(req,res)=>{
 
+    if(req.body.code==cache.get(req.body.phone))
+    {
+        cache.del(req.body.phone)
+        res.json({
+            resultCode:200
+        })
+    }
+    else
+    {
+        res.json({
+            resultCode:404
+        })
+    }
+
+})
 app.post('/register',(req,res)=>{
 
     var account=req.body.email;
@@ -944,41 +926,53 @@ app.post('/register',(req,res)=>{
     var checkquery='SELECT *FROM user WHERE account=? and platform=?';
     var insertquery='INSERT INTO user(platform,password,account) VALUES(?,?,?)';
                                                                                                                                                                                                                                                    
-    connection.query(checkquery,param,function(err,result){
-        var resultCode=404;
-        var message='가입 오류 발생'
+    connection.query(checkquery,param,function(err,mailresult){
+
         
 
         if(err){
             console.log(err);
         }
         else{
-            if(result.length==0){
-                console.log(insertquery)
-                console.log(params)
-                connection.query(insertquery,params,function(err,result){
+            if(mailresult.length==0){
+        
+                if(req.body.code==cache.get(req.body.phone))
+                {
+                    cache.del(req.body.phone)
+                    connection.query(insertquery,params,function(err,result){
 
-                    if(err)
-                    {
+                        if(err)
+                        {
+                            console.log(err)
+                        }
+                        else{
+                            res.json({
+                                resultCode:200,
+                                value:200
+                            })
+                        }
                     
-                    }
+                    })
+                }
+                else
+                {
+                    res.json({
+                        resultCode:400,
+                        value:400
+                    })
+                }
                 
-                });
-                message='회원가입에 성공했습니다.'
             }
             else{
-                message='이미 존재하는 회원입니다.'
+                res.json({
+                    resultCode:500,
+                    value:500
+                })
             }
 
         }
-        console.log(message)
-        res.json({
-            message:message
-        });
-    });
-
     
-
+    });
 });
 
 
@@ -7382,23 +7376,7 @@ app.post('/authsms',(req,res)=>{
         resultCode:200
     })
 })
-app.post('/verifycode',(req,res)=>{
 
-    if(req.body.code==cache.get(req.body.phone))
-    {
-        cache.del(req.body.phone)
-        res.json({
-            resultCode:200
-        })
-    }
-    else
-    {
-        res.json({
-            resultCode:404
-        })
-    }
-
-})
 
 //FORMAT OF TOKEN
 //Authorization:Bearer<access_token>
