@@ -164,12 +164,12 @@ app.post('/uploadimg', verifyToken,upload.single('image'), (req, res) => {
         }
         else
         {
-                    var image=req.file.location
+            var image=req.file.location
                
-                    res.json({
-                        resultCode:200,
-                        imageUri:image
-                    })
+                res.json({
+                    resultCode:200,
+                    imageUri:image
+                })
                 
         }
     })
@@ -836,7 +836,7 @@ app.post('/authcomplete',verifyToken,(req,res)=>{
     var gender=req.body.gender
     var age=req.body.age
 
-
+    var profileimage=req.body.profileimage
     //console.log(platform)
     //console.log(account)
     console.log(gender)
@@ -845,18 +845,14 @@ app.post('/authcomplete',verifyToken,(req,res)=>{
     console.log('authcomplete')
    // var param=[nickname,gender,age,platform,account]
     var nicknamecheck='select *from user where binary(nickname)=?'
-    var insertquery='update user set nickname=?,gender=?,age=? where platform=? and account=?'
+    var insertquery='update user set profileimage=?,nickname=?,gender=?,age=? where platform=? and account=?'
+    var param=[profileimage,nickname,gender,age]
+    if(profileimage==undefined){
+        insertquery='update user set nickname=?,gender=?,age=? where platform=? and account=?'
+        var param=[nickname,gender,age]
+    }
 
-    connection.query(nicknamecheck,nickname,function(err,result){
-        var message='오류 발생'
-        if(err)
-        {
-            console.log(err)
-        }
-        else{
-            if(result.length==0)
-            {
-                console.log(req.token)
+        
                 jwt.verify(req.token,'secretkey',(err,authData)=>{
                     if(err)
                     {
@@ -866,7 +862,7 @@ app.post('/authcomplete',verifyToken,(req,res)=>{
                     }
                     else
                     {
-                        connection.query(insertquery,[nickname,gender,age,authData.user.platform,authData.user.account],function(err,result){
+                        connection.query(insertquery,param,function(err,result){
                             if(err)
                             {
                                 console.log(message)
@@ -882,16 +878,9 @@ app.post('/authcomplete',verifyToken,(req,res)=>{
                    
                 })
             
-            }
-            else{
-                res.json({
-                    message:'닉네임이 중복되었습니다'
-                })
+          
+        
 
-            }
-        }
-
-    })
 })
 app.post('/verifycode',(req,res)=>{
 
@@ -927,8 +916,6 @@ app.post('/register',(req,res)=>{
     var insertquery='INSERT INTO user(platform,password,account) VALUES(?,?,?)';
                                                                                                                                                                                                                                                    
     connection.query(checkquery,param,function(err,mailresult){
-
-        
 
         if(err){
             console.log(err);
