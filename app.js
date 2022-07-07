@@ -845,12 +845,7 @@ app.post('/authcomplete',verifyToken,(req,res)=>{
     console.log('authcomplete')
    // var param=[nickname,gender,age,platform,account]
     var nicknamecheck='select *from user where binary(nickname)=?'
-    var insertquery='update user set profileimage=?,nickname=?,gender=?,age=? where platform=? and account=?'
-    var param=[profileimage,nickname,gender,age]
-    if(profileimage==undefined){
-        insertquery='update user set nickname=?,gender=?,age=? where platform=? and account=?'
-        var param=[nickname,gender,age]
-    }
+ 
 
         
                 jwt.verify(req.token,'secretkey',(err,authData)=>{
@@ -862,6 +857,12 @@ app.post('/authcomplete',verifyToken,(req,res)=>{
                     }
                     else
                     {
+                            var insertquery='update user set profileimage=?,nickname=?,gender=?,age=? where platform=? and account=?'
+                            var param=[profileimage,nickname,gender,age,authData.user.platform,authData.user.account]
+                            if(profileimage==undefined){
+                                insertquery='update user set nickname=?,gender=?,age=? where platform=? and account=?'
+                                var param=[nickname,gender,age,authData.user.platform,authData.user.account]
+    }
                         connection.query(insertquery,param,function(err,result){
                             if(err)
                             {
