@@ -324,7 +324,10 @@ io.sockets.on('connection', (socket) => {
                                     content:messageData.content,
                                     date:curtime
                                 }
-                                io.to(result[0].socketid).emit('sendResponse',JSON.stringify(sentmessage))
+                                if(messageData.type!='EXIT'){
+                                    io.to(result[0].socketid).emit('sendResponse',JSON.stringify(sentmessage))
+                                }
+                                
                                 io.to(userresult[0].socketid).emit('updaterooms',JSON.stringify(roomcontent))
                                 //socket.broadcast.to(`${messageData.roomid}`).emit('update', JSON.stringify(sendcontent))
                             }
