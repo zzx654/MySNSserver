@@ -1864,62 +1864,10 @@ app.post('/toggleFollow',verifyToken,(req,res)=>{
                     var param=[userid,myresult[0].userid]
                     if(following==0)
                     {
-                        var getuser='select *from user where userid=?'
-                        connection.query(getuser,userid,function(err,userresult){
-                            if(err){
-                                console.log(err)
-                            }
-                            else{
-                                var notimessage=myresult[0].nickname+'님이 당신을 팔로우했습니다'
-                                var insertnoti='insert into noti(platform,account,date,type,text,followerid) values(?,?,?,?,?,?)'
-                                var date=timestamp()
-                                var notiparam=[userresult[0].platform,userresult[0].account,date,6,notimessage,myresult[0].userid]
-                                connection.query(insertnoti,notiparam,function(err,result){
-                                    if(err){
-                                        console.log(err)
-                                    }
-                                    else{
-                                        const notiData = {
-                                            notiid : result.insertId,
-                                            type:6,
-                                            text:notimessage,
-                                            date:date,
-                                            followerid:myresult[0].userid,
-                                            isread:0
-                                          }
-                                          io.to(userresult[0].socketid).emit('updatenoti',JSON.stringify(notiData))
-                                          var payload={
-                                            data:{
-                                                title:'고민나눔',
-                                                message:notimessage,
-                                                notitype:'followed',
-                                                click_action:'NOTIFICATION_CLICK'
-                                            },
-                                            token:userresult[0].fcmtoken
-                                        
-                                        }
-                                        if(userresult[0].fcmtoken!="")
-                                        {
-                                            admin.messaging().send(payload)
-                                            .then(function(response){
-                                                console.log("Succesfully send message",response)
-                                            })
-                                            .catch(function(error){
-                                                console.log("Error sending message",error)
-                                            })
-                                        }
-                                    }
-                                })
-                                
-                            }
-                        })
                         query="insert into follow (userid,follower) values(?,?)"
-               
-
-
-                
                     }
-                    else{
+                    else
+                    {
                         query="delete from follow where userid=? and follower=?"
                     }
                     connection.query(query,param,function(err,result){
@@ -1932,12 +1880,76 @@ app.post('/toggleFollow',verifyToken,(req,res)=>{
                         }
                         else
                         {
-                            res.json({
-                                resultCode:200,
-                                value:200
-                            })
+                            if(following==0)
+                            {
+                                var getuser='select *from user where userid=?'
+                                connection.query(getuser,userid,function(err,userresult){
+                                    if(err){
+                                        console.log(err)
+                                    }
+                                    else{
+                                        var notimessage=myresult[0].nickname+'님이 당신을 팔로우했습니다'
+                                        var insertnoti='insert into noti(platform,account,date,type,text,followerid) values(?,?,?,?,?,?)'
+                                        var date=timestamp()
+                                        var notiparam=[userresult[0].platform,userresult[0].account,date,6,notimessage,myresult[0].userid]
+                                        connection.query(insertnoti,notiparam,function(err,result){
+                                            if(err){
+                                                console.log(err)
+                                            }
+                                            else{
+                                                const notiData = {
+                                                    notiid : result.insertId,
+                                                    type:6,
+                                                    text:notimessage,
+                                                    date:date,
+                                                    followerid:myresult[0].userid,
+                                                    isread:0
+                                                  }
+                                                  io.to(userresult[0].socketid).emit('updatenoti',JSON.stringify(notiData))
+                                                  var payload={
+                                                    data:{
+                                                        title:'고민나눔',
+                                                        message:notimessage,
+                                                        notitype:'followed',
+                                                        click_action:'NOTIFICATION_CLICK'
+                                                    },
+                                                    token:userresult[0].fcmtoken
+                                                
+                                                }
+                                                if(userresult[0].fcmtoken!="")
+                                                {
+                                                    admin.messaging().send(payload)
+                                                    .then(function(response){
+                                                        console.log("Succesfully send message",response)
+                                                    })
+                                                    .catch(function(error){
+                                                        console.log("Error sending message",error)
+                                                    })
+                                                }
+                                                res.json({
+                                                    resultCode:200,
+                                                    value:200
+                                                })
+                                            }
+                                        })
+                                        
+                                    }
+                                })
+                           
+                                      
+                            }
+                            else{
+                                res.json({
+                                    resultCode:200,
+                                    value:200
+                                })
+                            }
+                          
+                        
                         }
                     })
+                  
+              
                 }
             })
       
