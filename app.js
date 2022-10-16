@@ -1916,7 +1916,7 @@ app.post('/toggleFollow',verifyToken,(req,res)=>{
                                                     token:userresult[0].fcmtoken
                                                 
                                                 }
-                                                if(userresult[0].fcmtoken!="")
+                                                /**if(userresult[0].fcmtoken!='')
                                                 {
                                                     admin.messaging().send(payload)
                                                     .then(function(response){
@@ -1925,7 +1925,7 @@ app.post('/toggleFollow',verifyToken,(req,res)=>{
                                                     .catch(function(error){
                                                         console.log("Error sending message",error)
                                                     })
-                                                }
+                                                }**/
                                                 res.json({
                                                     resultCode:200,
                                                     value:200
