@@ -3389,7 +3389,7 @@ app.post('/getFollowingPosts',verifyToken,(req,res)=>{
                     {
                         if(postnum==undefined)
                         {
-                            param=[myresult[0].userid,myresult[0].userid,platform,account,""]
+                            param=[myresult[0].userid,myresult[0].userid,myresult[0].userid,""]
                             query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
                             +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
                             +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
@@ -3397,11 +3397,11 @@ app.post('/getFollowingPosts',verifyToken,(req,res)=>{
                             " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                             " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                             " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                            " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and userid in (select userid from follow where platform=? and account=?) and anonymous=? order by date desc,postnum desc limit 20"
+                            " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and userid in (select userid from follow where follower=?) and anonymous=? order by date desc,postnum desc limit 20"
                         }
                         else
                         {
-                            param=[postdate,postdate,postnum,myresult[0].userid,myresult[0].userid,platform,account,""]
+                            param=[postdate,postdate,postnum,myresult[0].userid,myresult[0].userid,myresult[0].userid,""]
                             query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
                             +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,ifnull(vote.votecount,0) as votecount from post left outer"
                             +" join (select postid,count(*) as commentcount from comment group by postid) com on post.postid=com.postid left outer"+
@@ -3409,7 +3409,7 @@ app.post('/getFollowingPosts',verifyToken,(req,res)=>{
                             " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                             " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                             " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                            " where (date<? or (date=? and postnum<?)) and userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and userid in (select userid from follow where platform=? and account=?)  and anonymous=?  order by date desc,postnum desc limit 20"
+                            " where (date<? or (date=? and postnum<?)) and userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and userid in (select userid from follow where follower=?)  and anonymous=?  order by date desc,postnum desc limit 20"
                         
                         }
                     }
@@ -3417,7 +3417,7 @@ app.post('/getFollowingPosts',verifyToken,(req,res)=>{
                     {
                         if(postnum==undefined)
                         {
-                            param=[latitude,longitude,latitude,myresult[0].userid,myresult[0].userid,platform,account,""]
+                            param=[latitude,longitude,latitude,myresult[0].userid,myresult[0].userid,myresult[0].userid,""]
                             query="select post.postnum,post.postid,post.userid,post.vote,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
                             +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,if(isnull(post.latitude),-100.0,(6371*acos(cos(radians(?))*cos(radians(post.latitude))*cos"+
                             "(radians(post.longitude)-radians(?))+sin(radians(?))*sin(radians(post.latitude))))) as distance,ifnull(vote.votecount,0) as votecount from post left outer"
@@ -3426,11 +3426,11 @@ app.post('/getFollowingPosts',verifyToken,(req,res)=>{
                             " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                             " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                             " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                            " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and userid in (select userid from follow where platform=? and account=?)  and anonymous=? order by date desc,postnum desc limit 20"
+                            " where userid not in (select blockeduserid from block where userid=?) and userid not in (select userid from block where blockeduserid=?) and userid in (select userid from follow where follower=?)  and anonymous=? order by date desc,postnum desc limit 20"
                         }
                         else
                         {
-                            param=[latitude,longitude,latitude,postdate,postdate,postnum,myresult[0].userid,myresult[0].userid,platform,account,""]
+                            param=[latitude,longitude,latitude,postdate,postdate,postnum,myresult[0].userid,myresult[0].userid,myresult[0].userid,""]
                             query="select post.postnum,post.postid,post.vote,post.userid,getuser.nickname,getuser.profileimage,post.anonymous,post.text,tag.tags,post.date,post.image,"
                             +"post.audio,ifnull(com.commentcount,0) as commentcount,ifnull(lik.likecount,0) as likecount,if(isnull(post.latitude),-100.0,(6371*acos(cos(radians(?))*cos(radians(post.latitude))*cos"+
                             "(radians(post.longitude)-radians(?))+sin(radians(?))*sin(radians(post.latitude))))) as distance,ifnull(vote.votecount,0) as votecount from post left outer"
@@ -3439,7 +3439,7 @@ app.post('/getFollowingPosts',verifyToken,(req,res)=>{
                             " left outer join (select postid,group_concat(tagname separator '#') as tags from posttag group by postid) tag on post.postid=tag.postid"+
                             " left outer join (select userid as id,nickname,profileimage from user) getuser on post.userid=getuser.id"+
                             " left outer join (select postid,count(*) as votecount from vote group by postid) vote on post.postid=vote.postid"+
-                            " where (date<? or (date=? and postnum<?)) and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid in (select userid from follow where platform=? and account=?)  and anonymous=? order by date desc,postnum desc limit 20"
+                            " where (date<? or (date=? and postnum<?)) and userid not in (select userid from block where blockeduserid=?) and userid not in (select blockeduserid from block where userid=?) and userid in (select userid from follow where follower=?)  and anonymous=? order by date desc,postnum desc limit 20"
                 
                         }
                 
