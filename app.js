@@ -5914,7 +5914,7 @@ app.post('/checkSelectedComment',verifyToken,(req,res)=>{
         
         
             var commentquery="select *from comment where commentid=?"
-            var postquery="select *from comment where postid=?"
+            var postquery="select *from post where postid=?"
             var query="select com.commentid,com.postid,com.userid,com.text,com.ref,com.time,com.depth,com.platform,com.account,com.anonymous,getuser.nickname,getuser.profileimage,com.age,com.gender,"+
             "ifnull(lik.likecount,0) as likecount,if(isnull(mylik.account),0,1)"+
             " as commentliked from (select *from comment where commentid=?) com "+
