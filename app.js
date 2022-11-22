@@ -276,6 +276,8 @@ io.sockets.on('connection', (socket) => {
                            var content=messageData.content
                             if(messageData.type=='IMAGE')
                                 content='사진을 보냈습니다.'
+                            if(messageData.type=='LOCATION')
+                                content='위치정보를 보냈습니다'
                             var payload={
                                 data:{
                                   //  dateChanged:String(dchanged),
