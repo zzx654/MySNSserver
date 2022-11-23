@@ -268,48 +268,50 @@ io.sockets.on('connection', (socket) => {
             else{
                 if(userresult.length!=0)
                 {                   
-                        if(userresult[0].fcmtoken==='')
-                        {
-                            console.log('상대가 로그아웃중')
-                        }
-                        else{
-                           var content=messageData.content
-                            if(messageData.type=='IMAGE')
-                                content='사진을 보냈습니다.'
-                            if(messageData.type=='LOCATION')
-                                content='위치정보를 보냈습니다'
-                            var payload={
-                                data:{
-                                  //  dateChanged:String(dchanged),
-                                  //
-                                    senderid:String(messageData.senderid),
-                                    roomid:messageData.roomid,
-                                    date:curtime,
-                                    type:messageData.type,
-                                    content:messageData.content,
-                                    title:'고민나눔',
-                                    message:userresult[0].nickname+':'+content,
-                                    notitype:'chat',
-                                    click_action:'NOTIFICATION_CLICK'
-                                },
-                                token:userresult[0].fcmtoken
-                            }
-                    
-                            
-                            admin.messaging().send(payload)
-                            .then(function(response){
-                                console.log("Succesfully send message",response)
-                            })
-                            .catch(function(error){
-                                console.log("Error sending message",error)
-                            })
-                        }
+                       
                         connection.query(getmy,messageData.senderid,function(err,result){
                             if(err)
                             {
                                 console.log(err)
                             }
                             else{
+
+                                if(userresult[0].fcmtoken==='')
+                                {
+                                    console.log('상대가 로그아웃중')
+                                }
+                                else{
+                                   var content=messageData.content
+                                    if(messageData.type=='IMAGE')
+                                        content='사진을 보냈습니다.'
+                                    if(messageData.type=='LOCATION')
+                                        content='위치정보를 보냈습니다'
+                                    var payload={
+                                        data:{
+                                          //  dateChanged:String(dchanged),
+                                          //
+                                            senderid:String(messageData.senderid),
+                                            roomid:messageData.roomid,
+                                            date:curtime,
+                                            type:messageData.type,
+                                            content:messageData.content,
+                                            title:'고민나눔',
+                                            message:result[0].nickname+':'+content,
+                                            notitype:'chat',
+                                            click_action:'NOTIFICATION_CLICK'
+                                        },
+                                        token:userresult[0].fcmtoken
+                                    }
+                            
+                                    
+                                    admin.messaging().send(payload)
+                                    .then(function(response){
+                                        console.log("Succesfully send message",response)
+                                    })
+                                    .catch(function(error){
+                                        console.log("Error sending message",error)
+                                    })
+                                }
                                 var roomcontent={
                                     //dateChanged:dchanged,
                                     profileimage:result[0].profileimage,
