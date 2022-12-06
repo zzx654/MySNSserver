@@ -188,7 +188,7 @@ app.post('/uploadimg', verifyToken,upload.single('image'), (req, res) => {
 
 // 소켓 연결 코드
 io.sockets.on('connection', (socket) => {
-  console.log(`Socket connected  : ${socket.id}`)
+  console.log(`Socket connected : ${socket.id}`)
 
 
   socket.on('enter', (data) => {
