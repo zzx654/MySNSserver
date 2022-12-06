@@ -254,7 +254,7 @@ io.sockets.on('connection', (socket) => {
                 console.log(err)
             }
             else{
-                console.log('exit2성공')
+                console.log('exit2성공 ')
             }
         })
     }
