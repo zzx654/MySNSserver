@@ -348,11 +348,11 @@ io.sockets.on('connection', (socket) => {
 })
 
 var db_config ={
-    host: 'us-cdbr-east-06.cleardb.net',
-    user: "b6c314704a6006",
-    database: "heroku_f377120143b95ea",
+    host: 'portfolio.cvponpcwczgo.us-east-1.rds.amazonaws.com',
+    user: "root",
+    database: "socialanony",
     connectionLimit: 1000,
-    password: "72253f9b",
+    password: "audgks167",
     port: "3306",
     charset:"utf8mb4",
     dateStrings:'date'
