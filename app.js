@@ -178,7 +178,7 @@ app.post('/uploadimg', verifyToken,upload.single('image'), (req, res) => {
   })
   app.post('/uploadimg', fileUpload.single('image'), (req, res) => {
     console.log(req.file)
-    var image='https://socialanony.herokuapp.com/' +req.file.filename
+    var image='https://mysnssever.onrender.com/' +req.file.filename
     res.json({
         resultCode:200,
         imageUri:image
