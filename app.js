@@ -260,6 +260,7 @@ io.sockets.on('connection', (socket) => {
     }
     if(messageData.receiverid!=0)
     {
+        console.log('receiverid exist')
         connection.query(getuser,[messageData.receiverid,messageData.senderid,messageData.senderid],function(err,userresult){
             if(err)
             {
