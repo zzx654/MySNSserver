@@ -6674,9 +6674,9 @@ function send_message(phone) {
     
     // 환경변수로 저장했던 중요한 정보들
     const serviceId = 'ncp:sms:kr:274802285988:androidsms';// 
-    const secretKey = 'sBaY1pB3KmXNjSottf4ZVic1bqKTPRU5J5YJ5hb0';//
-    const accessKey = 'G9nAoHAN5xQgnpPgtq9a';//
-    const my_number = '01057135288';
+    const secretKey = '';//
+    const accessKey = '';//
+    const my_number = '';
      // 그 외 url 관련
      const method = "POST";
      const space = " ";
