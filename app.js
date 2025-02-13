@@ -545,7 +545,7 @@ app.post('/onlytest',(req,res)=>{
             notitype:'comment',
             click_action:'NOTIFICATION_CLICK'
         },
-        token:'fNWHDoboRY-LrpDLI-3iUd:APA91bGaKBDDhv97MEktZaD743KqGzfNQK1tComBT088qKrBHku2_90QkAVEdXvWOMoQfNj_5VAo34TS3ffkImTerqru557AKakTvMryRSeVrY3Cn4SWM88CUf_Aj2rGHiamawIw0y6l'
+        token:''
     }
     
     admin.messaging().send(payload)
